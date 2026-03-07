@@ -57,6 +57,10 @@
             </button>
         </div>
         <div class="ctrl-group">
+            <button class="ctrl-btn" id="effectsBtn" onclick="togglePanel('effects')" title="Effektlar">
+                <i class="fas fa-magic"></i>
+                <span>Effektlar</span>
+            </button>
             <button class="ctrl-btn" id="chatBtn" onclick="togglePanel('chat')" title="Chat">
                 <i class="fas fa-comment"></i>
                 <span>Chat</span>
@@ -134,6 +138,40 @@
             <button class="panel-close" onclick="togglePanel('participants')"><i class="fas fa-times"></i></button>
         </div>
         <div class="participants-list" id="participantsList"></div>
+    </div>
+
+    <!-- Effects Panel -->
+    <div class="side-panel" id="effectsPanel">
+        <div class="panel-hdr">
+            <span>✨ Effektlar</span>
+            <button class="panel-close" onclick="togglePanel('effects')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="effects-grid">
+            <div class="effect-card active" id="effect-none" onclick="applyEffect('none')">
+                <div class="effect-preview effect-none-preview"><i class="fas fa-ban"></i></div>
+                <span>None</span>
+            </div>
+            <div class="effect-card" id="effect-blur" onclick="applyEffect('blur')">
+                <div class="effect-preview effect-blur-preview"><i class="fas fa-wind"></i></div>
+                <span>Blur</span>
+            </div>
+            <div class="effect-card" id="effect-grayscale" onclick="applyEffect('grayscale')">
+                <div class="effect-preview effect-grayscale-preview"><i class="fas fa-adjust"></i></div>
+                <span>Gray</span>
+            </div>
+            <div class="effect-card" id="effect-sepia" onclick="applyEffect('sepia')">
+                <div class="effect-preview effect-sepia-preview"><i class="fas fa-leaf"></i></div>
+                <span>Sepia</span>
+            </div>
+            <div class="effect-card" id="effect-invert" onclick="applyEffect('invert')">
+                <div class="effect-preview effect-invert-preview"><i class="fas fa-eye-dropper"></i></div>
+                <span>Invert</span>
+            </div>
+            <div class="effect-card" id="effect-warm" onclick="applyEffect('warm')">
+                <div class="effect-preview effect-warm-preview"><i class="fas fa-sun"></i></div>
+                <span>Warm</span>
+            </div>
+        </div>
     </div>
 
     <!-- Host Panel -->

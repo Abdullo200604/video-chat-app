@@ -31,9 +31,19 @@ let chatOpen = false;
 let unread = 0;
 let micOn = sessionStorage.getItem('pdp_mic') !== 'false';
 let camOn = sessionStorage.getItem('pdp_cam') !== 'false';
+let currentEffect = 'none';
 let permissions = { screenShare: true, reactions: true, participantMic: true, participantCamera: true };
 let chatEnabled = true;
 let participants = {};
+
+const effectFilters = {
+    none: '',
+    blur: 'blur(5px)',
+    grayscale: 'grayscale(100%)',
+    sepia: 'sepia(100%)',
+    invert: 'invert(100%)',
+    warm: 'saturate(150%) sepia(40%) brightness(105%)'
+};
 
 // ── DOM refs ─────────────────────────────────────
 const videoGrid = document.getElementById('videoGrid');
@@ -283,7 +293,7 @@ function addChatMessage({ text, name, uid }) {
 }
 
 // ── PANELS ───────────────────────────────────────
-const panels = { chat: 'chatPanel', participants: 'participantsPanel', host: 'hostPanel', settings: 'settingsPanel' };
+const panels = { chat: 'chatPanel', participants: 'participantsPanel', host: 'hostPanel', settings: 'settingsPanel', effects: 'effectsPanel' };
 
 function togglePanel(name) {
     const el = document.getElementById(panels[name]);
@@ -308,6 +318,19 @@ function togglePanel(name) {
             setTimeout(() => document.getElementById('chatInput').focus(), 350);
         }
     }
+}
+
+// ── EFFECTS ──────────────────────────────────────
+function applyEffect(name) {
+    currentEffect = name;
+    if (tiles['me']) {
+        const vid = tiles['me'].querySelector('video');
+        if (vid) vid.style.filter = effectFilters[name];
+    }
+    document.querySelectorAll('.effect-card').forEach(c => c.classList.remove('active'));
+    const card = document.getElementById('effect-' + name);
+    if (card) card.classList.add('active');
+    showToast(`Effekt: ${name} qo'llanildi ✨`);
 }
 
 // ── HOSTS CONTROLS ───────────────────────────────

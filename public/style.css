@@ -559,6 +559,87 @@ body.meeting-body {
     background: white;
 }
 
+/* ── Effects Panel ── */
+.effects-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 16px;
+    background: #f1f3f4;
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.effect-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    border-radius: 12px;
+    padding: 12px 8px;
+    background: white;
+    border: 2px solid transparent;
+    transition: all .2s;
+    user-select: none;
+}
+
+.effect-card:hover {
+    border-color: var(--blue);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.effect-card.active {
+    border-color: var(--blue);
+    background: #e8f0fe;
+}
+
+.effect-card span {
+    font-size: 12px;
+    color: #3C4043;
+    font-weight: 500;
+}
+
+.effect-preview {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+}
+
+.effect-none-preview {
+    background: linear-gradient(135deg, #bdc3c7, #2c3e50);
+}
+
+.effect-blur-preview {
+    background: linear-gradient(135deg, #89f7fe, #66a6ff);
+    filter: blur(1px);
+}
+
+.effect-grayscale-preview {
+    background: linear-gradient(135deg, #303134, #000);
+    filter: grayscale(1);
+}
+
+.effect-sepia-preview {
+    background: linear-gradient(135deg, #d4a574, #8b6914);
+}
+
+.effect-invert-preview {
+    background: linear-gradient(135deg, #333, #fff);
+    filter: invert(1);
+    color: black;
+}
+
+.effect-warm-preview {
+    background: linear-gradient(135deg, #f6d365, #fda085);
+}
+
 /* ── Participants Panel ── */
 .participants-list {
     flex: 1;
