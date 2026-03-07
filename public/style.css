@@ -8,26 +8,22 @@
 body {
     background-color: #202124;
     color: white;
+    overflow: hidden;
+    height: 100vh;
 }
 
 .main-container {
     display: flex;
     height: 100vh;
+    flex-direction: row;
 }
 
+/* ── LEFT: Video area ── */
 .main-left {
-    flex: 0.8;
+    flex: 1;
     display: flex;
     flex-direction: column;
-}
-
-.main-right {
-    flex: 0.2;
-    background-color: #ffffff;
-    border-left: 1px solid #e0e0e0;
-    display: flex;
-    flex-direction: column;
-    color: #3C4043;
+    min-width: 0;
 }
 
 .main-videos {
@@ -36,7 +32,8 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 20px;
+    padding: 10px;
+    overflow: hidden;
 }
 
 #video-grid {
@@ -44,7 +41,9 @@ body {
     justify-content: center;
     align-items: center;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 8px;
+    width: 100%;
+    height: 100%;
 }
 
 video {
@@ -56,17 +55,19 @@ video {
     transform: scaleX(-1);
 }
 
+/* ── Controls ── */
 .main-controls {
     background-color: #202124;
-    padding: 15px;
+    padding: 10px;
     display: flex;
     justify-content: center;
-    gap: 20px;
+    gap: 12px;
+    flex-wrap: wrap;
 }
 
 .main-controls-block {
     display: flex;
-    gap: 15px;
+    gap: 10px;
 }
 
 .main-controls-button {
@@ -74,24 +75,32 @@ video {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 10px 15px;
+    padding: 10px 14px;
     cursor: pointer;
-    border-radius: 5px;
+    border-radius: 8px;
     transition: all 0.3s ease;
     background-color: #3C4043;
-    min-width: 80px;
+    min-width: 70px;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.main-controls-button:hover {
+.main-controls-button:hover,
+.main-controls-button:active {
     background-color: #5f6368;
 }
 
 .main-controls-button i {
     font-size: 20px;
-    margin-bottom: 5px;
+    margin-bottom: 4px;
 }
 
-.unmute, .stop {
+.main-controls-button span {
+    font-size: 12px;
+}
+
+.unmute,
+.stop {
     color: #ea4335 !important;
 }
 
@@ -99,20 +108,35 @@ video {
     background-color: #ea4335;
     color: white;
     border-radius: 20px;
-    padding: 10px 20px;
-    justify-content: center;
-    align-items: center;
+    padding: 10px 18px;
 }
 
-.leave-meeting:hover {
+.leave-meeting:hover,
+.leave-meeting:active {
     background-color: #d93025;
 }
 
+.leave-text {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* ── RIGHT: Chat area ── */
+.main-right {
+    width: 280px;
+    background-color: #ffffff;
+    border-left: 1px solid #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    color: #3C4043;
+}
+
 .main-header {
-    padding: 15px;
+    padding: 14px;
     color: #202124;
     text-align: center;
     border-bottom: 1px solid #e0e0e0;
+    font-weight: 500;
 }
 
 .main-chat-window {
@@ -128,27 +152,99 @@ video {
 
 .messages li {
     padding: 8px 12px;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     background-color: #e8eaed;
     border-radius: 8px;
-    font-size: 14px;
-    word-break: break-all;
+    font-size: 13px;
+    word-break: break-word;
 }
 
 .main-message-container {
-    padding: 15px;
+    padding: 12px;
     border-top: 1px solid #e0e0e0;
 }
 
 #chat_message {
     width: 100%;
-    padding: 12px;
+    padding: 10px 14px;
     border: 1px solid #dadce0;
     border-radius: 20px;
     outline: none;
-    font-size: 14px;
+    font-size: 13px;
 }
 
 #chat_message:focus {
     border-color: #1a73e8;
+}
+
+/* ══════════════════════════════
+   MOBILE RESPONSIVE (max 768px)
+══════════════════════════════ */
+@media (max-width: 768px) {
+    body {
+        overflow: auto;
+        height: 100%;
+    }
+
+    .main-container {
+        flex-direction: column;
+        height: 100%;
+        min-height: 100vh;
+    }
+
+    .main-left {
+        flex: none;
+        height: 60vh;
+    }
+
+    .main-videos {
+        padding: 6px;
+    }
+
+    #video-grid {
+        gap: 5px;
+    }
+
+    video {
+        width: calc(50% - 5px);
+        height: auto;
+        aspect-ratio: 4/3;
+        max-width: 100%;
+        border-radius: 6px;
+    }
+
+    /* If only one video, make it full width */
+    #video-grid video:only-child {
+        width: 100%;
+    }
+
+    .main-controls {
+        padding: 8px 6px;
+        gap: 8px;
+    }
+
+    .main-controls-button {
+        min-width: 60px;
+        padding: 8px 10px;
+    }
+
+    .main-controls-button i {
+        font-size: 18px;
+    }
+
+    .main-controls-button span {
+        font-size: 10px;
+    }
+
+    .main-right {
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid #e0e0e0;
+        height: 40vh;
+    }
+
+    .main-chat-window {
+        flex-grow: 1;
+        overflow-y: auto;
+    }
 }
