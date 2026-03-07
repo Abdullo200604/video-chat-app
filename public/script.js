@@ -15,7 +15,14 @@ const ICE_SERVERS = {
 
 // ── State ────────────────────────────────────────
 const socket = io('/');
-const myPeer = new Peer(undefined, { path: '/peerjs', host: '/', port: window.location.port || (location.protocol === 'https:' ? 443 : 80), config: ICE_SERVERS });
+const isProd = location.protocol === 'https:';
+const myPeer = new Peer(undefined, {
+    path: '/peerjs',
+    host: '/',
+    port: isProd ? 443 : (window.location.port || 80),
+    secure: isProd,
+    config: ICE_SERVERS
+});
 const peers = {};           // { peerId: call }
 const tiles = {};           // { peerId: tileEl }
 const streams = {};           // { peerId: stream }

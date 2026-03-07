@@ -4,10 +4,11 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 require('dotenv').config();
 
-const app = express();
-const server = require('http').Server(app);
 const io = require('socket.io')(server);
 const { ExpressPeerServer } = require('peer');
+
+const app = express();
+app.set('trust proxy', 1); // For Render.com HTTPS
 const { v4: uuidV4 } = require('uuid');
 const crypto = require('crypto');
 
@@ -28,7 +29,12 @@ app.use(express.urlencoded({ extended: true }));
 app.use(session({
   secret: process.env.SESSION_SECRET || 'pdp_chat_secret',
   resave: false,
-  saveUninitialized: true
+  saveUninitialized: true,
+  proxy: true,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000 // 1 day
+  }
 }));
 
 app.use(passport.initialize());
