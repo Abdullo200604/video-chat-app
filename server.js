@@ -27,24 +27,27 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Foydalanuvchini sessiyada saqlash
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((user, done) => done(null, user));
 
-// Google strategiyasi
-passport.use(new GoogleStrategy({
-  clientID: process.env.GOOGLE_CLIENT_ID,
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: process.env.GOOGLE_CALLBACK_URL
-}, (accessToken, refreshToken, profile, done) => {
-  const user = {
-    id: profile.id,
-    name: profile.displayName,
-    email: profile.emails[0].value,
-    avatar: profile.photos[0]?.value
-  };
-  done(null, user);
-}));
+// Google strategiyasi (faqat o'zgaruvchilar mavjud bo'lsa)
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: process.env.GOOGLE_CALLBACK_URL
+  }, (accessToken, refreshToken, profile, done) => {
+    const user = {
+      id: profile.id,
+      name: profile.displayName,
+      email: profile.emails[0].value,
+      avatar: profile.photos[0]?.value
+    };
+    done(null, user);
+  }));
+} else {
+  console.log("⚠️ Google OAuth o'zgaruvchilari topilmadi. Login funksiyasi ishlamaydi.");
+}
 
 // ── Room state ──────────────────────────────
 const rooms = {};
