@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDP Chat – Video Majlislar</title>
+    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@400;500&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+
+    <!-- ── NAV ── -->
+    <nav class="navbar">
+        <div class="nav-logo">
+            <div class="logo-icon"><i class="fas fa-video"></i></div>
+            <span class="logo-text">PDP <strong>Chat</strong></span>
+        </div>
+        <div class="nav-actions">
+            <button class="btn-text">Kirish</button>
+            <button class="btn-primary-sm" onclick="openModal()">Majlis boshlash</button>
+        </div>
+    </nav>
+
+    <!-- ── HERO ── -->
+    <main class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">
+                Video majlislar,<br>
+                <span class="gradient-text">har qachon, har yerdan</span>
+            </h1>
+            <p class="hero-subtitle">
+                PDP Chat orqali sifatli video suhbat o'tkazing.<br>
+                Xavfsiz, tez va qulay platforma.
+            </p>
+            <div class="hero-actions">
+                <button class="btn-primary-lg" onclick="openModal()">
+                    <i class="fas fa-plus"></i>
+                    Yangi majlis
+                </button>
+                <div class="join-form">
+                    <input type="text" id="joinCodeInput" placeholder="Kod yoki havola yozing" />
+                    <button class="btn-join" onclick="joinByCode()">Kirish</button>
+                </div>
+            </div>
+        </div>
+        <div class="hero-visual">
+            <div class="video-preview-grid">
+                <div class="preview-card main-card">
+                    <div class="preview-avatar" style="background:linear-gradient(135deg,#1a73e8,#0d47a1)">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="preview-name">Siz</div>
+                    <div class="preview-controls">
+                        <span><i class="fas fa-microphone"></i></span>
+                        <span><i class="fas fa-video"></i></span>
+                    </div>
+                </div>
+                <div class="preview-card sm-card">
+                    <div class="preview-avatar" style="background:linear-gradient(135deg,#34a853,#1b5e20)">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="preview-name">Ishtirokchi 1</div>
+                </div>
+                <div class="preview-card sm-card">
+                    <div class="preview-avatar" style="background:linear-gradient(135deg,#fbbc04,#e65100)">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="preview-name">Ishtirokchi 2</div>
+                </div>
+                <div class="preview-card sm-card">
+                    <div class="preview-avatar" style="background:linear-gradient(135deg,#ea4335,#880e4f)">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="preview-name">Ishtirokchi 3</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ── FEATURES ── -->
+    <section class="features">
+        <div class="feature-card">
+            <div class="feature-icon" style="background:#e8f0fe"><i class="fas fa-shield-alt" style="color:#1a73e8"></i>
+            </div>
+            <h3>Xavfsiz aloqa</h3>
+            <p>End-to-end shifrlangan video suhbatlar</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon" style="background:#fce8e6"><i class="fas fa-users" style="color:#ea4335"></i>
+            </div>
+            <h3>Ko'p ishtirokchi</h3>
+            <p>Bir vaqtda ko'p odamlar bilan suhbat</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon" style="background:#e6f4ea"><i class="fas fa-film" style="color:#34a853"></i></div>
+            <h3>Theater Mode</h3>
+            <p>Kino zalida filmni birgalikda tomosha qiling</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon" style="background:#fef7e0"><i class="fas fa-desktop" style="color:#fbbc04"></i>
+            </div>
+            <h3>Ekran ulashish</h3>
+            <p>Ekraningizni ishtirokchilar bilan bo'ling</p>
+        </div>
+    </section>
+
+    <!-- ── MODAL ── -->
+    <div class="modal-backdrop" id="modalBackdrop" onclick="closeModal()"></div>
+    <div class="modal" id="mainModal">
+        <div class="modal-header">
+            <h2>Majlis boshlash</h2>
+            <button class="modal-close" onclick="closeModal()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <button class="modal-option" onclick="createRoom()">
+                <div class="option-icon" style="background:#e8f0fe"><i class="fas fa-link" style="color:#1a73e8"></i>
+                </div>
+                <div class="option-text">
+                    <strong>Majlis yaratish</strong>
+                    <span>Havola yaratib, keyinroq boshlash</span>
+                </div>
+                <i class="fas fa-chevron-right option-arrow"></i>
+            </button>
+            <button class="modal-option" onclick="startNow()">
+                <div class="option-icon" style="background:#e6f4ea"><i class="fas fa-play" style="color:#34a853"></i>
+                </div>
+                <div class="option-text">
+                    <strong>Hozir majlis boshlash</strong>
+                    <span>Darhol xonaga kiring va boshqalarni taklif qiling</span>
+                </div>
+                <i class="fas fa-chevron-right option-arrow"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- ── LINK MODAL ── -->
+    <div class="link-modal" id="linkModal">
+        <div class="modal-header">
+            <h2>Majlis havolasi</h2>
+            <button class="modal-close" onclick="closeLinkModal()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <p style="color:#5f6368;margin-bottom:12px;font-size:14px">
+                Quyidagi havolani ishtirokchilarga yuboring:
+            </p>
+            <div class="link-box">
+                <span id="generatedLink"></span>
+                <button class="copy-btn" onclick="copyLink()" id="copyBtn">
+                    <i class="fas fa-copy"></i> Nusxa
+                </button>
+            </div>
+            <button class="btn-primary-lg" style="width:100%;margin-top:16px" onclick="joinGeneratedRoom()">
+                <i class="fas fa-sign-in-alt"></i> Xonaga kirish
+            </button>
+        </div>
+    </div>
+    <div class="modal-backdrop" id="linkBackdrop" onclick="closeLinkModal()" style="display:none"></div>
+
+    <script>
+        let generatedRoomUrl = '';
+
+        function openModal() {
+            document.getElementById('mainModal').classList.add('show');
+            document.getElementById('modalBackdrop').classList.add('show');
+        }
+        function closeModal() {
+            document.getElementById('mainModal').classList.remove('show');
+            document.getElementById('modalBackdrop').classList.remove('show');
+        }
+        function closeLinkModal() {
+            document.getElementById('linkModal').classList.remove('show');
+            document.getElementById('linkBackdrop').style.display = 'none';
+        }
+
+        async function createRoom() {
+            closeModal();
+            const res = await fetch('/api/create-room', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accessType: 'open' }) });
+            const data = await res.json();
+            generatedRoomUrl = window.location.origin + data.link;
+            document.getElementById('generatedLink').textContent = generatedRoomUrl;
+            document.getElementById('linkModal').classList.add('show');
+            document.getElementById('linkBackdrop').style.display = 'block';
+        }
+
+        async function startNow() {
+            closeModal();
+            const res = await fetch('/api/create-room', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accessType: 'open' }) });
+            const data = await res.json();
+            window.location.href = data.link;
+        }
+
+        function joinGeneratedRoom() {
+            window.location.href = generatedRoomUrl.replace(window.location.origin, '');
+        }
+
+        function joinByCode() {
+            const val = document.getElementById('joinCodeInput').value.trim();
+            if (!val) return;
+            // Accept full URL or just the code
+            const code = val.includes('/') ? val.split('/').pop() : val;
+            window.location.href = '/lobby/' + code;
+        }
+
+        function copyLink() {
+            navigator.clipboard.writeText(generatedRoomUrl).then(() => {
+                const btn = document.getElementById('copyBtn');
+                btn.innerHTML = '<i class="fas fa-check"></i> Nusxalandi!';
+                btn.style.background = '#34a853';
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fas fa-copy"></i> Nusxa';
+                    btn.style.background = '';
+                }, 2000);
+            });
+        }
+
+        document.getElementById('joinCodeInput').addEventListener('keydown', e => {
+            if (e.key === 'Enter') joinByCode();
+        });
+    </script>
+</body>
+
+</html>

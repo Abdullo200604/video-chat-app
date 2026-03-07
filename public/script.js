@@ -1,376 +1,576 @@
-// ══════════════════════════════════════════════
-// SOCKET & PEER SETUP
-// ══════════════════════════════════════════════
-const socket = io('/');
-const videoGrid = document.getElementById('video-grid');
+// ════════════════════════════════════════════════
+// PDP CHAT MEETING ROOM – CLIENT SCRIPT
+// ════════════════════════════════════════════════
 
-const myPeer = new Peer(undefined, {
-    path: '/peerjs',
-    host: '/',
-    port: window.location.port || (window.location.protocol === 'https:' ? 443 : 80),
-    config: {
-        iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' },
-            { urls: 'stun:stun2.l.google.com:19302' },
-            { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-            { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
-            { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
-        ]
-    }
-});
-
-// ══════════════════════════════════════════════
-// STATE
-// ══════════════════════════════════════════════
-const myVideo = document.createElement('video');
-myVideo.muted = true;
-
-const peers = {};           // { peerId: call }
-const videoStreams = {};    // { peerId: videoElement }
-
-let myVideoStream;
-let myPeerId;
-let isAdmin = false;
-let theaterModeActive = false;
-let focusModeActive = false;
-let currentEffect = 'none';
-let unreadMessages = 0;
-let chatOpen = false;
-
-const effectFilters = {
-    none: '',
-    blur: 'blur(5px)',
-    grayscale: 'grayscale(100%)',
-    sepia: 'sepia(100%)',
-    invert: 'invert(100%)',
-    warm: 'saturate(150%) sepia(40%) brightness(105%)'
+// ── Config ──────────────────────────────────────
+const ICE_SERVERS = {
+    iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+        { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+        { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+    ]
 };
 
-// ══════════════════════════════════════════════
-// MEDIA INIT
-// ══════════════════════════════════════════════
-navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(stream => {
-    myVideoStream = stream;
+// ── State ────────────────────────────────────────
+const socket = io('/');
+const myPeer = new Peer(undefined, { path: '/peerjs', host: '/', port: window.location.port || (location.protocol === 'https:' ? 443 : 80), config: ICE_SERVERS });
+const peers = {};           // { peerId: call }
+const tiles = {};           // { peerId: tileEl }
+const streams = {};           // { peerId: stream }
+let myStream;
+let screenStream = null;
+let myPeerId = null;
+let myName = sessionStorage.getItem('pdp_name') || 'Mehmon';
+let isHost = false;
+let isHandRaised = false;
+let theaterActive = false;
+let focusActive = false;
+let chatOpen = false;
+let unread = 0;
+let micOn = sessionStorage.getItem('pdp_mic') !== 'false';
+let camOn = sessionStorage.getItem('pdp_cam') !== 'false';
+let permissions = { screenShare: true, reactions: true, participantMic: true, participantCamera: true };
+let chatEnabled = true;
+let participants = {};
 
-    addVideoStream(myVideo, stream, 'me');
+// ── DOM refs ─────────────────────────────────────
+const videoGrid = document.getElementById('videoGrid');
 
-    // Answer incoming calls
-    myPeer.on('call', call => {
-        call.answer(stream);
-        const video = document.createElement('video');
-        call.on('stream', remoteStream => {
-            addVideoStream(video, remoteStream, call.peer);
-        });
-        call.on('close', () => video.remove());
-    });
+// ── INIT ────────────────────────────────────────
+(async () => {
+    document.getElementById('meetingCodeText').textContent = ROOM_ID.substring(0, 8) + '…';
+    startTimer();
+    await loadDevices();
 
-    // New user joined
-    socket.on('user-connected', userId => {
-        setTimeout(() => connectToNewUser(userId, stream), 1000);
-    });
+    try {
+        myStream = await navigator.mediaDevices.getUserMedia({ video: camOn, audio: true });
+        if (!micOn) myStream.getAudioTracks().forEach(t => t.enabled = false);
+        if (!camOn) myStream.getVideoTracks().forEach(t => t.enabled = false);
+    } catch (e) {
+        // Try audio only
+        try { myStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true }); camOn = false; }
+        catch (e2) { myStream = null; showToast('Qurilmaga kirish imkoni yo\'lq'); }
+    }
 
-    // Chat: send on Enter
-    document.getElementById('chat_message').addEventListener('keydown', e => {
-        const text = e.target;
-        if (e.key === 'Enter' && text.value.trim()) {
-            socket.emit('message', text.value.trim());
-            text.value = '';
-        }
-    });
+    if (myStream) addTile(myStream, 'me', myName, true);
+})();
 
-    // Chat: receive
-    socket.on('createMessage', message => addMessage(message));
-});
-
-// ══════════════════════════════════════════════
-// PEER OPEN
-// ══════════════════════════════════════════════
 myPeer.on('open', id => {
     myPeerId = id;
-    socket.emit('join-room', ROOM_ID, id);
+    socket.emit('join-room', ROOM_ID, id, myName);
 });
 
-// ══════════════════════════════════════════════
-// SOCKET EVENTS
-// ══════════════════════════════════════════════
-socket.on('you-are-admin', () => {
-    isAdmin = true;
-    document.getElementById('theaterModeBtn').classList.remove('hidden');
+myPeer.on('call', call => {
+    if (!myStream) return;
+    call.answer(myStream);
+    const vid = document.createElement('video');
+    call.on('stream', s => {
+        streams[call.peer] = s;
+        addTile(s, call.peer, participants[call.peer]?.name || 'Mehmon', false);
+    });
+    call.on('close', () => removeTile(call.peer));
 });
 
-socket.on('new-admin', peerId => {
+// ── Socket events ────────────────────────────────
+socket.on('you-are-host', () => {
+    isHost = true;
+    document.querySelectorAll('.host-only').forEach(el => el.classList.remove('hidden'));
+    showToast('Siz bu majlisning mezboningizsiz 👑');
+});
+socket.on('new-host', peerId => {
     if (peerId === myPeerId) {
-        isAdmin = true;
-        document.getElementById('theaterModeBtn').classList.remove('hidden');
+        isHost = true;
+        document.querySelectorAll('.host-only').forEach(el => el.classList.remove('hidden'));
+        showToast('Siz yangi mezbon bo\'ldingiz 👑');
     }
 });
-
-socket.on('theater-mode-changed', enabled => {
-    theaterModeActive = enabled;
-    if (enabled) enterTheaterMode();
-    else exitTheaterMode();
+socket.on('room-state', state => {
+    chatEnabled = state.chatEnabled;
+    participants = state.participants || {};
+    Object.assign(permissions, state.permissions || {});
+    updateParticipantsUI();
+    if (state.theaterMode) { theaterActive = true; enterTheaterUI(); }
 });
-
-socket.on('user-disconnected', userId => {
-    if (peers[userId]) peers[userId].close();
-    if (videoStreams[userId]) {
-        videoStreams[userId].remove();
-        delete videoStreams[userId];
-    }
-    updateTheaterAvatars();
+socket.on('user-connected', (uid, name) => {
+    participants[uid] = { name: name || 'Mehmon' };
+    setTimeout(() => callUser(uid), 1000);
+    updateParticipantsUI();
+    showToast(`${name || 'Mehmon'} qo'shildi`);
 });
+socket.on('user-disconnected', uid => {
+    if (peers[uid]) { peers[uid].close(); delete peers[uid]; }
+    removeTile(uid);
+    delete participants[uid];
+    updateParticipantsUI();
+});
+socket.on('participants-update', data => {
+    participants = data;
+    updateParticipantsUI();
+});
+socket.on('createMessage', msg => addChatMessage(msg));
+socket.on('theater-mode-changed', on => {
+    theaterActive = on;
+    on ? enterTheaterUI() : exitTheaterUI();
+});
+socket.on('permissions-updated', perms => {
+    Object.assign(permissions, perms);
+    if (!permissions.participantMic && !isHost) forceMute();
+    if (!permissions.participantCamera && !isHost) forceCamOff();
+});
+socket.on('chat-toggled', on => {
+    chatEnabled = on;
+    document.getElementById('chatDisabledMsg').classList.toggle('hidden', on);
+    document.getElementById('chatInputArea').style.display = on ? '' : 'none';
+});
+socket.on('force-mute', uid => { if (uid === myPeerId) forceMute(); });
+socket.on('force-camera-off', uid => { if (uid === myPeerId) forceCamOff(); });
+socket.on('force-kick', uid => { if (uid === myPeerId) { showToast('Mezbon sizi chiqardi.'); setTimeout(leaveMeeting, 1500); } });
+socket.on('user-raised-hand', (uid, name) => { showToast(`✋ ${name} qo'l ko'tardi`); markHandRaised(uid); });
+socket.on('show-reaction', ({ uid, name, emoji }) => showFloatingReaction(emoji, name));
 
-// ══════════════════════════════════════════════
-// CONNECT TO NEW USER
-// ══════════════════════════════════════════════
-function connectToNewUser(userId, stream) {
-    const call = myPeer.call(userId, stream);
-    const video = document.createElement('video');
+// ── VIDEO TILES ──────────────────────────────────
+function addTile(stream, peerId, name, isMe) {
+    if (tiles[peerId]) return;
 
-    call.on('stream', remoteStream => {
-        addVideoStream(video, remoteStream, userId);
+    const tile = document.createElement('div');
+    tile.className = 'video-tile' + (isMe ? ' is-me' : '');
+    tile.dataset.peer = peerId;
+
+    const vid = document.createElement('video');
+    vid.className = 'tile-video';
+    vid.srcObject = stream;
+    vid.autoplay = true;
+    vid.playsInline = true;
+    vid.muted = isMe;
+    vid.play().catch(() => { });
+
+    const info = document.createElement('div');
+    info.className = 'tile-info';
+    info.innerHTML = `<div class="tile-name">${name}${isMe ? ' (Siz)' : ''}</div>`;
+    if (isMe && isHost) info.querySelector('.tile-name').innerHTML += ' 👑';
+
+    tile.appendChild(vid);
+    tile.appendChild(info);
+    videoGrid.appendChild(tile);
+    tiles[peerId] = tile;
+    streams[peerId] = stream;
+    updateGridCount();
+    if (theaterActive) updateTheaterAvatars();
+}
+
+function removeTile(peerId) {
+    if (tiles[peerId]) { tiles[peerId].remove(); delete tiles[peerId]; }
+    if (streams[peerId]) delete streams[peerId];
+    updateGridCount();
+    if (theaterActive) updateTheaterAvatars();
+}
+
+function updateGridCount() {
+    const n = videoGrid.children.length;
+    videoGrid.className = 'video-grid ' + (n === 1 ? 'count-1' : n === 2 ? 'count-2' : n <= 4 ? 'count-3' : n <= 6 ? 'count-many' : 'count-many');
+}
+
+// ── PEER CONNECTION ──────────────────────────────
+function callUser(uid) {
+    if (!myStream) return;
+    const call = myPeer.call(uid, myStream);
+    call.on('stream', s => {
+        streams[uid] = s;
+        addTile(s, uid, participants[uid]?.name || 'Mehmon', false);
     });
-    call.on('close', () => {
-        video.remove();
-        delete videoStreams[userId];
-        updateTheaterAvatars();
-    });
-
-    peers[userId] = call;
+    call.on('close', () => removeTile(uid));
+    peers[uid] = call;
 }
 
-// ══════════════════════════════════════════════
-// VIDEO STREAM MANAGEMENT
-// ══════════════════════════════════════════════
-function addVideoStream(video, stream, peerId) {
-    video.srcObject = stream;
-    video.setAttribute('playsinline', 'true');
-    video.dataset.peerId = peerId;
-    video.addEventListener('loadedmetadata', () => {
-        video.play().catch(e => console.error('Play error:', e));
-    });
-    videoGrid.append(video);
-    videoStreams[peerId] = video;
-
-    if (theaterModeActive) updateTheaterAvatars();
+// ── MIC / CAM ────────────────────────────────────
+function toggleMic() {
+    if (!myStream) return;
+    if (!micOn && !isHost && !permissions.participantMic) { showToast('Mezbon mikrofonni bloklagan'); return; }
+    micOn = !micOn;
+    myStream.getAudioTracks().forEach(t => t.enabled = micOn);
+    socket.emit('status-update', { muted: !micOn });
+    updateCtrlState('micBtn', micOn, 'fa-microphone', 'fa-microphone-slash');
+    updateCtrlState('t-micBtn', micOn, 'fa-microphone', 'fa-microphone-slash');
 }
 
-// ══════════════════════════════════════════════
-// THEATER MODE
-// ══════════════════════════════════════════════
-function toggleTheaterMode() {
-    if (!isAdmin) return;
-    const newState = !theaterModeActive;
-    socket.emit('toggle-theater-mode', newState);
+function toggleCam() {
+    if (!myStream) return;
+    if (!camOn && !isHost && !permissions.participantCamera) { showToast('Mezbon kamerani bloklagan'); return; }
+    camOn = !camOn;
+    myStream.getVideoTracks().forEach(t => t.enabled = camOn);
+    socket.emit('status-update', { videoOff: !camOn });
+    updateCtrlState('camBtn', camOn, 'fa-video', 'fa-video-slash');
+    updateCtrlState('t-camBtn', camOn, 'fa-video', 'fa-video-slash');
 }
 
-function enterTheaterMode() {
-    const overlay = document.getElementById('theaterOverlay');
-    overlay.classList.add('active');
+function forceMute() { if (micOn) toggleMic(); }
+function forceCamOff() { if (camOn) toggleCam(); }
 
-    updateTheaterAvatars();
-
-    // Theater button highlight
-    document.getElementById('theaterModeBtn').style.background = 'linear-gradient(135deg,#7b2f8f,#4a1942)';
+function updateCtrlState(btnId, on, iconOn, iconOff) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.innerHTML = `<i class="fas ${on ? iconOn : iconOff}"></i><span>${btn.querySelector('span')?.textContent || ''}</span>`;
+    btn.classList.toggle('off-state', !on);
 }
 
-function exitTheaterMode() {
-    if (focusModeActive) exitFocusMode();
+// ── SCREEN SHARE ─────────────────────────────────
+async function toggleScreenShare() {
+    if (!isHost && !permissions.screenShare) { showToast('Mezbon ekran ulashishni bloklagan'); return; }
+    const btn = document.getElementById('screenBtn');
 
-    const overlay = document.getElementById('theaterOverlay');
-    overlay.classList.remove('active');
-
-    document.getElementById('theaterModeBtn').style.background = '';
-
-    // Move any videos back to grid (they may have been moved)
-    Object.values(videoStreams).forEach(v => {
-        if (!videoGrid.contains(v)) videoGrid.append(v);
-    });
-}
-
-// ─── Build theater screen + avatars ───
-function updateTheaterAvatars() {
-    if (!theaterModeActive) return;
-
-    const screenContainer = document.getElementById('theaterMainVideo');
-    const avatarsContainer = document.getElementById('theaterAvatars');
-    screenContainer.innerHTML = '';
-    avatarsContainer.innerHTML = '';
-
-    const allVideos = Object.entries(videoStreams);
-    if (allVideos.length === 0) return;
-
-    // First remote video → main screen; or own video if alone
-    const mainEntry = allVideos.find(([id]) => id !== 'me') || allVideos[0];
-    const [mainId, mainVideo] = mainEntry;
-
-    // Clone for screen display
-    const screenVid = document.createElement('video');
-    screenVid.srcObject = mainVideo.srcObject;
-    screenVid.setAttribute('playsinline', 'true');
-    screenVid.muted = (mainId === 'me');
-    screenVid.autoplay = true;
-    screenVid.play().catch(() => { });
-    screenContainer.appendChild(screenVid);
-
-    // All other videos → avatars
-    allVideos.forEach(([id, vid]) => {
-        const wrapper = document.createElement('div');
-        wrapper.classList.add('theater-avatar');
-        wrapper.dataset.peerId = id;
-
-        const avVid = document.createElement('video');
-        avVid.srcObject = vid.srcObject;
-        avVid.setAttribute('playsinline', 'true');
-        avVid.muted = true;
-        avVid.autoplay = true;
-        avVid.play().catch(() => { });
-
-        const label = document.createElement('div');
-        label.classList.add('avatar-label');
-        label.textContent = id === 'me' ? 'Siz' : 'Mehmon';
-
-        wrapper.appendChild(avVid);
-        wrapper.appendChild(label);
-        avatarsContainer.appendChild(wrapper);
-    });
-}
-
-// ══════════════════════════════════════════════
-// FOCUS MODE
-// ══════════════════════════════════════════════
-function enterFocusMode() {
-    if (focusModeActive) return;
-    focusModeActive = true;
-
-    const overlay = document.getElementById('focusOverlay');
-    const container = document.getElementById('focusVideoContainer');
-    const screenVid = document.querySelector('#theaterMainVideo video');
-
-    container.innerHTML = '';
-    if (screenVid) {
-        const clone = document.createElement('video');
-        clone.srcObject = screenVid.srcObject;
-        clone.setAttribute('playsinline', 'true');
-        clone.muted = screenVid.muted;
-        clone.autoplay = true;
-        clone.play().catch(() => { });
-        container.appendChild(clone);
+    if (screenStream) {
+        screenStream.getTracks().forEach(t => t.stop());
+        screenStream = null;
+        // Restore camera
+        const vid = myStream.getVideoTracks()[0];
+        Object.values(peers).forEach(call => {
+            const sender = call.peerConnection?.getSenders().find(s => s.track?.kind === 'video');
+            if (sender && vid) sender.replaceTrack(vid);
+        });
+        btn.classList.remove('active-panel');
+        showToast('Ekran ulashish to\'xtatildi');
+        return;
     }
 
-    overlay.classList.add('active');
-}
-
-function exitFocusMode() {
-    focusModeActive = false;
-    const overlay = document.getElementById('focusOverlay');
-    overlay.classList.remove('active');
-    setTimeout(() => {
-        document.getElementById('focusVideoContainer').innerHTML = '';
-    }, 400);
-}
-
-// ══════════════════════════════════════════════
-// PANEL TOGGLE (Chat & Effects)
-// ══════════════════════════════════════════════
-function togglePanel(panelName) {
-    const chatPanel = document.getElementById('chatPanel');
-    const effectsPanel = document.getElementById('effectsPanel');
-    const chatBtn = document.getElementById('chatToggleBtn');
-    const effectsBtn = document.getElementById('effectsToggleBtn');
-
-    if (panelName === 'chat') {
-        const isOpen = chatPanel.classList.contains('open');
-        effectsPanel.classList.remove('open'); effectsBtn.classList.remove('active-panel');
-        if (isOpen) {
-            chatPanel.classList.remove('open'); chatBtn.classList.remove('active-panel');
-            chatOpen = false;
-        } else {
-            chatPanel.classList.add('open'); chatBtn.classList.add('active-panel');
-            chatOpen = true;
-            unreadMessages = 0;
-            ['chatBadge', 'theaterChatBadge'].forEach(id => {
-                const b = document.getElementById(id);
-                if (b) { b.textContent = ''; b.classList.remove('show'); }
-            });
-            setTimeout(() => document.getElementById('chat_message').focus(), 350);
+    try {
+        screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+        const track = screenStream.getVideoTracks()[0];
+        Object.values(peers).forEach(call => {
+            const sender = call.peerConnection?.getSenders().find(s => s.track?.kind === 'video');
+            if (sender) sender.replaceTrack(track);
+        });
+        // Update own tile
+        if (tiles['me']) {
+            const vid = tiles['me'].querySelector('video');
+            if (vid) { vid.srcObject = screenStream; }
         }
-    } else {
-        const isOpen = effectsPanel.classList.contains('open');
-        chatPanel.classList.remove('open'); chatBtn.classList.remove('active-panel'); chatOpen = false;
-        if (isOpen) { effectsPanel.classList.remove('open'); effectsBtn.classList.remove('active-panel'); }
-        else { effectsPanel.classList.add('open'); effectsBtn.classList.add('active-panel'); }
-    }
+        track.onended = () => toggleScreenShare();
+        btn.classList.add('active-panel');
+        showToast('Ekran ulashish boshlandi');
+    } catch (e) { showToast('Ekran ulashish bekor qilindi'); }
 }
 
-// ══════════════════════════════════════════════
-// EFFECTS
-// ══════════════════════════════════════════════
-function applyEffect(name) {
-    currentEffect = name;
-    if (myVideo) myVideo.style.filter = effectFilters[name];
-    document.querySelectorAll('.effect-card').forEach(c => c.classList.remove('active'));
-    const card = document.getElementById('effect-' + name);
-    if (card) card.classList.add('active');
+// ── CHAT ─────────────────────────────────────────
+function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    if (!text || !chatEnabled) return;
+    socket.emit('message', text);
+    input.value = '';
 }
+document.getElementById('chatInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') sendMessage();
+});
 
-// ══════════════════════════════════════════════
-// CHAT
-// ══════════════════════════════════════════════
-function addMessage(message) {
-    const ul = document.querySelector('.messages');
-    const li = document.createElement('li');
-    li.innerHTML = `<b>Foydalanuvchi</b><br>${message}`;
-    ul.appendChild(li);
-    scrollToBottom();
+function addChatMessage({ text, name, uid }) {
+    const isMe = uid === myPeerId;
+    const div = document.createElement('div');
+    div.className = 'msg-item' + (isMe ? ' mine' : '');
+    div.innerHTML = `<div class="msg-name">${name}</div><div>${text}</div>`;
+    document.getElementById('chatMessages').appendChild(div);
+    document.getElementById('chatMessages').scrollTop = 9999;
 
     if (!chatOpen) {
-        unreadMessages++;
-        const n = unreadMessages > 9 ? '9+' : unreadMessages;
-        ['chatBadge', 'theaterChatBadge'].forEach(id => {
+        unread++;
+        const n = unread > 9 ? '9+' : unread;
+        ['chatBadge', 't-chatBadge'].forEach(id => {
             const b = document.getElementById(id);
             if (b) { b.textContent = n; b.classList.add('show'); }
         });
     }
 }
 
-const scrollToBottom = () => {
-    const w = document.querySelector('.main-chat-window');
-    if (w) w.scrollTop = w.scrollHeight;
-};
+// ── PANELS ───────────────────────────────────────
+const panels = { chat: 'chatPanel', participants: 'participantsPanel', host: 'hostPanel', settings: 'settingsPanel' };
 
-// ══════════════════════════════════════════════
-// MIC / CAMERA CONTROLS
-// ══════════════════════════════════════════════
-function muteUnmute() {
-    if (!myVideoStream) return;
-    const track = myVideoStream.getAudioTracks()[0];
-    track.enabled = !track.enabled;
-    const on = track.enabled;
+function togglePanel(name) {
+    const el = document.getElementById(panels[name]);
+    if (!el) return;
+    const isOpen = el.classList.contains('open');
 
-    ['muteButton', 't-muteButton'].forEach(id => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        el.innerHTML = on
-            ? `<i class="fas fa-microphone"></i><span>Ovoz</span>`
-            : `<i class="fas fa-microphone-slash unmute"></i><span>Yoqish</span>`;
-        on ? el.classList.remove('unmute') : el.classList.add('unmute');
+    // Close all
+    Object.values(panels).forEach(id => document.getElementById(id)?.classList.remove('open'));
+    Object.keys(panels).forEach(k => document.getElementById(k + 'Btn')?.classList.remove('active-panel'));
+
+    if (!isOpen) {
+        el.classList.add('open');
+        const btn = document.getElementById(name + 'Btn') || document.getElementById('host' + (name === 'host' ? 'PanelBtn' : ''));
+        btn?.classList.add('active-panel');
+    }
+
+    if (name === 'chat') {
+        chatOpen = !isOpen;
+        if (chatOpen) {
+            unread = 0;
+            ['chatBadge', 't-chatBadge'].forEach(id => { const b = document.getElementById(id); if (b) { b.textContent = ''; b.classList.remove('show'); } });
+            setTimeout(() => document.getElementById('chatInput').focus(), 350);
+        }
+    }
+}
+
+// ── HOSTS CONTROLS ───────────────────────────────
+function updateSetting(key, val) { socket.emit('update-permissions', { [key]: val }); }
+function updatePerm(key, val) { socket.emit('update-permissions', { [key]: val }); }
+function toggleChatForAll(on) { socket.emit('toggle-chat', on); }
+
+function hostMute(uid) { socket.emit('host-mute-user', uid); }
+function hostDisableCam(uid) { socket.emit('host-disable-camera', uid); }
+function hostKick(uid) { socket.emit('host-kick-user', uid); }
+
+// ── PARTICIPANTS UI ───────────────────────────────
+function updateParticipantsUI() {
+    const colors = ['#1a73e8', '#34a853', '#ea4335', '#fbbc04', '#9c27b0', '#00bcd4'];
+    const list = document.getElementById('participantsList');
+    const hList = document.getElementById('hostParticipantsList');
+    const badge = document.getElementById('participantCount');
+
+    const entries = Object.entries(participants);
+    if (badge) badge.textContent = entries.length;
+    if (list) list.innerHTML = '';
+    if (hList) hList.innerHTML = '';
+
+    entries.forEach(([uid, info], i) => {
+        const color = colors[i % colors.length];
+        const initial = (info.name || 'M').charAt(0).toUpperCase();
+        const isMe_ = uid === myPeerId;
+
+        if (list) {
+            const item = document.createElement('div');
+            item.className = 'participant-item';
+            item.innerHTML = `
+                <div class="p-avatar" style="background:${color}">${initial}</div>
+                <div class="p-name">${info.name}${isMe_ ? ' (Siz)' : ''}</div>
+                <div class="p-badges">
+                    ${info.muted ? '<i class="fas fa-microphone-slash" title="Jim"></i>' : ''}
+                    ${info.videoOff ? '<i class="fas fa-video-slash" title="Kamera o\'ch"></i>' : ''}
+                </div>`;
+            list.appendChild(item);
+        }
+
+        if (hList && isHost && !isMe_) {
+            const item = document.createElement('div');
+            item.className = 'host-participant-item';
+            item.innerHTML = `
+                <div class="p-avatar" style="background:${color};width:28px;height:28px;font-size:12px;">${initial}</div>
+                <div class="p-name" style="font-size:13px;">${info.name}</div>
+                <div class="host-p-actions">
+                    <button class="host-action-btn" onclick="hostMute('${uid}')" title="Jim qilish"><i class="fas fa-microphone-slash"></i></button>
+                    <button class="host-action-btn" onclick="hostDisableCam('${uid}')" title="Kamerani o'chirish"><i class="fas fa-video-slash"></i></button>
+                    <button class="host-action-btn danger" onclick="hostKick('${uid}')" title="Chiqarish"><i class="fas fa-user-times"></i></button>
+                </div>`;
+            hList.appendChild(item);
+        }
     });
 }
 
-function playStop() {
-    if (!myVideoStream) return;
-    const track = myVideoStream.getVideoTracks()[0];
-    track.enabled = !track.enabled;
-    const on = track.enabled;
+function markHandRaised(uid) {
+    const tile = tiles[uid];
+    if (!tile) return;
+    const badge = document.createElement('div');
+    badge.className = 'hand-raised-badge';
+    badge.textContent = '✋';
+    tile.appendChild(badge);
+    setTimeout(() => badge.remove(), 5000);
+}
 
-    ['playPauseVideo', 't-videoButton'].forEach(id => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        el.innerHTML = on
-            ? `<i class="fas fa-video"></i><span>Kamera</span>`
-            : `<i class="fas fa-video-slash stop"></i><span>Yoqish</span>`;
-        on ? el.classList.remove('stop') : el.classList.add('stop');
+// ── RAISE HAND ───────────────────────────────────
+function raiseHand() {
+    isHandRaised = !isHandRaised;
+    const btn = document.getElementById('handBtn');
+    if (isHandRaised) {
+        socket.emit('raise-hand');
+        btn.classList.add('active-panel');
+        showToast('Qo\'l ko\'tardingiz ✋');
+    } else {
+        btn.classList.remove('active-panel');
+    }
+}
+
+// ── REACTIONS ────────────────────────────────────
+function toggleReactionMenu() {
+    if (!isHost && !permissions.reactions) { showToast('Mezbon reaksiyalarni bloklagan'); return; }
+    document.getElementById('reactionMenu').classList.toggle('hidden');
+}
+
+function sendReaction(emoji) {
+    socket.emit('send-reaction', emoji);
+    document.getElementById('reactionMenu').classList.add('hidden');
+}
+
+function showFloatingReaction(emoji, name) {
+    const container = document.getElementById('reactionsOverlay');
+    const el = document.createElement('div');
+    el.className = 'reaction-bubble';
+    el.textContent = emoji;
+    el.style.left = (20 + Math.random() * 60) + '%';
+    container.appendChild(el);
+    setTimeout(() => el.remove(), 2600);
+}
+
+// ── THEATER MODE ─────────────────────────────────
+function toggleTheaterMode() {
+    if (!isHost) return;
+    socket.emit('toggle-theater-mode', !theaterActive);
+}
+
+function enterTheaterUI() {
+    document.getElementById('theaterOverlay').classList.add('active');
+    updateTheaterAvatars();
+    showToast('🎭 Theater Mode faollashtirildi');
+}
+
+function exitTheaterUI() {
+    if (focusActive) exitFocusMode();
+    document.getElementById('theaterOverlay').classList.remove('active');
+}
+
+function updateTheaterAvatars() {
+    const screenCont = document.getElementById('theaterMainVideo');
+    const avatarsCont = document.getElementById('theaterAvatars');
+    screenCont.innerHTML = '';
+    avatarsCont.innerHTML = '';
+
+    const entries = Object.entries(streams);
+    if (!entries.length) return;
+
+    const mainEntry = entries.find(([id]) => id !== 'me') || entries[0];
+    const [, mainStream] = mainEntry;
+
+    const sv = document.createElement('video');
+    sv.srcObject = mainStream;
+    sv.playsInline = true;
+    sv.autoplay = true;
+    sv.muted = true;
+    sv.play().catch(() => { });
+    screenCont.appendChild(sv);
+
+    entries.forEach(([id, s]) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'theater-avatar';
+        const av = document.createElement('video');
+        av.srcObject = s; av.playsInline = true; av.autoplay = true; av.muted = true;
+        av.play().catch(() => { });
+        const lbl = document.createElement('div');
+        lbl.className = 'av-label';
+        lbl.textContent = id === 'me' ? 'Siz' : (participants[id]?.name || 'Mehmon').substring(0, 8);
+        wrap.appendChild(av); wrap.appendChild(lbl);
+        avatarsCont.appendChild(wrap);
     });
 }
+
+function enterFocusMode() {
+    if (focusActive) return;
+    focusActive = true;
+    const overlay = document.getElementById('focusOverlay');
+    const src = document.querySelector('#theaterMainVideo video');
+    const cont = document.getElementById('focusVideoContainer');
+    cont.innerHTML = '';
+    if (src) {
+        const v = document.createElement('video');
+        v.srcObject = src.srcObject; v.playsInline = true; v.autoplay = true; v.muted = src.muted;
+        v.play().catch(() => { });
+        cont.appendChild(v);
+    }
+    overlay.classList.add('active');
+}
+
+function exitFocusMode() {
+    focusActive = false;
+    document.getElementById('focusOverlay').classList.remove('active');
+    setTimeout(() => { document.getElementById('focusVideoContainer').innerHTML = ''; }, 400);
+}
+
+// ── DEVICE SETTINGS ──────────────────────────────
+async function loadDevices() {
+    const devs = await navigator.mediaDevices.enumerateDevices().catch(() => []);
+    const camSel = document.getElementById('cameraSelect');
+    const micSel = document.getElementById('micSelect');
+    devs.filter(d => d.kind === 'videoinput').forEach(d => {
+        const o = document.createElement('option');
+        o.value = d.deviceId; o.textContent = d.label || 'Kamera';
+        camSel.appendChild(o);
+    });
+    devs.filter(d => d.kind === 'audioinput').forEach(d => {
+        const o = document.createElement('option');
+        o.value = d.deviceId; o.textContent = d.label || 'Mikrofon';
+        micSel.appendChild(o);
+    });
+}
+
+async function switchCamera(deviceId) {
+    if (!deviceId) return;
+    const s = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: deviceId } }, audio: false }).catch(() => null);
+    if (!s) return;
+    const track = s.getVideoTracks()[0];
+    myStream.getVideoTracks().forEach(t => { t.stop(); myStream.removeTrack(t); });
+    myStream.addTrack(track);
+    Object.values(peers).forEach(call => {
+        const sender = call.peerConnection?.getSenders().find(s => s.track?.kind === 'video');
+        if (sender) sender.replaceTrack(track);
+    });
+    if (tiles['me']) tiles['me'].querySelector('video').srcObject = myStream;
+}
+
+async function switchMic(deviceId) {
+    if (!deviceId) return;
+    const s = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: { exact: deviceId } } }).catch(() => null);
+    if (!s) return;
+    const track = s.getAudioTracks()[0];
+    myStream.getAudioTracks().forEach(t => { t.stop(); myStream.removeTrack(t); });
+    myStream.addTrack(track);
+    Object.values(peers).forEach(call => {
+        const sender = call.peerConnection?.getSenders().find(s => s.track?.kind === 'audio');
+        if (sender) sender.replaceTrack(track);
+    });
+}
+
+// ── TIMER ────────────────────────────────────────
+function startTimer() {
+    const el = document.getElementById('meetingTimer');
+    let secs = 0;
+    setInterval(() => {
+        secs++;
+        const h = Math.floor(secs / 3600);
+        const m = Math.floor((secs % 3600) / 60);
+        const s = secs % 60;
+        el.textContent = (h ? pad(h) + ':' : '') + pad(m) + ':' + pad(s);
+    }, 1000);
+}
+function pad(n) { return String(n).padStart(2, '0'); }
+
+// ── LEAVE ────────────────────────────────────────
+function confirmLeave() { document.getElementById('leaveModal').classList.remove('hidden'); }
+
+function leaveMeeting() {
+    Object.values(peers).forEach(c => c.close());
+    myStream?.getTracks().forEach(t => t.stop());
+    screenStream?.getTracks().forEach(t => t.stop());
+    window.location.href = '/';
+}
+
+// ── TOAST ────────────────────────────────────────
+function showToast(msg, duration = 3000) {
+    const c = document.getElementById('toastContainer');
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.textContent = msg;
+    c.appendChild(t);
+    setTimeout(() => t.remove(), duration);
+}
+
+// ── COPY MEETING LINK ────────────────────────────
+function copyMeetingLink() {
+    const url = window.location.origin + '/lobby/' + ROOM_ID;
+    navigator.clipboard.writeText(url).then(() => showToast('Havola nusxalandi! ✅'));
+}
+
+// ── CLOSE REACTION MENU ON OUTSIDE CLICK ─────────
+document.addEventListener('click', e => {
+    const menu = document.getElementById('reactionMenu');
+    const btn = document.getElementById('reactionsBtn');
+    if (!menu.contains(e.target) && !btn?.contains(e.target)) {
+        menu.classList.add('hidden');
+    }
+});

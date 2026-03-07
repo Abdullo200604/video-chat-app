@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Majlisga kirish – PDP Chat</title>
+    <link rel="stylesheet" href="lobby.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <!-- NAV -->
+    <nav class="lobby-nav">
+        <a href="/" class="nav-logo">
+            <div class="logo-icon"><i class="fas fa-video"></i></div>
+            <span>PDP <strong>Chat</strong></span>
+        </a>
+    </nav>
+
+    <main class="lobby-main">
+
+        <!-- LEFT: Camera preview -->
+        <div class="lobby-preview">
+            <div class="camera-preview" id="cameraPreview">
+                <video id="previewVideo" autoplay playsinline muted></video>
+                <div class="camera-off-state" id="cameraOffState">
+                    <div class="cam-avatar" id="camAvatarDisplay">
+                        <span id="avatarInitial">?</span>
+                    </div>
+                </div>
+                <div class="preview-controls">
+                    <button class="preview-btn" id="previewMicBtn" onclick="togglePreviewMic()" title="Mikrofon">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                    <button class="preview-btn" id="previewCamBtn" onclick="togglePreviewCam()" title="Kamera">
+                        <i class="fas fa-video"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="device-check" id="deviceCheck">
+                <span class="device-ok"><i class="fas fa-circle-check"></i> Kamera va mikrofon tayyor</span>
+            </div>
+        </div>
+
+        <!-- RIGHT: Join form -->
+        <div class="lobby-form-area">
+            <h1 class="lobby-title">Majlisga qo'shilish</h1>
+            <p class="lobby-subtitle">Nomingizni kiriting va qo'shiling</p>
+
+            <div class="form-group">
+                <label class="form-label">Ismingiz</label>
+                <input type="text" id="nameInput" class="form-input" placeholder="Ism Familiya" maxlength="40"
+                    autofocus />
+            </div>
+
+            <div id="permissionDenied" class="permission-warning hidden">
+                <i class="fas fa-exclamation-triangle"></i>
+                Kamera yoki mikrofon ruxsati rad etildi. Ism kiriting va davom eting.
+            </div>
+
+            <button class="btn-join-meeting" id="joinBtn" onclick="joinMeeting()" disabled>
+                <i class="fas fa-sign-in-alt"></i>
+                Qo'shilish
+            </button>
+
+            <div class="join-info">
+                <i class="fas fa-info-circle"></i>
+                Qo'shilganda kamera va mikrofon so'raladi.
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        const ROOM_ID = window.location.pathname.split('/').pop();
+        let localStream = null;
+        let micEnabled = true;
+        let camEnabled = true;
+
+        // ── Get camera/mic ──────────────────────────
+        async function initMedia() {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                const vid = document.getElementById('previewVideo');
+                vid.srcObject = localStream;
+                vid.style.display = 'block';
+                document.getElementById('cameraOffState').style.display = 'none';
+            } catch (e) {
+                document.getElementById('permissionDenied').classList.remove('hidden');
+                document.getElementById('deviceCheck').innerHTML =
+                    '<span class="device-warn"><i class="fas fa-exclamation-triangle"></i> Qurilma ruxsati rad etildi</span>';
+                document.getElementById('previewVideo').style.display = 'none';
+            }
+        }
+
+        function togglePreviewMic() {
+            micEnabled = !micEnabled;
+            if (localStream) localStream.getAudioTracks().forEach(t => t.enabled = micEnabled);
+            const btn = document.getElementById('previewMicBtn');
+            btn.innerHTML = micEnabled ? '<i class="fas fa-microphone"></i>' : '<i class="fas fa-microphone-slash"></i>';
+            btn.classList.toggle('btn-off', !micEnabled);
+        }
+
+        function togglePreviewCam() {
+            camEnabled = !camEnabled;
+            if (localStream) localStream.getVideoTracks().forEach(t => t.enabled = camEnabled);
+            const btn = document.getElementById('previewCamBtn');
+            btn.innerHTML = camEnabled ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
+            btn.classList.toggle('btn-off', !camEnabled);
+            document.getElementById('cameraOffState').style.display = camEnabled ? 'none' : 'flex';
+            document.getElementById('previewVideo').style.display = camEnabled ? 'block' : 'none';
+        }
+
+        // ── Name input ──────────────────────────────
+        document.getElementById('nameInput').addEventListener('input', function () {
+            const val = this.value.trim();
+            document.getElementById('joinBtn').disabled = val.length < 2;
+            const initial = val.charAt(0).toUpperCase() || '?';
+            document.getElementById('avatarInitial').textContent = initial;
+        });
+
+        // ── Join ────────────────────────────────────
+        function joinMeeting() {
+            const name = document.getElementById('nameInput').value.trim();
+            if (name.length < 2) return;
+            // Pass name and device states via sessionStorage
+            sessionStorage.setItem('pdp_name', name);
+            sessionStorage.setItem('pdp_mic', micEnabled);
+            sessionStorage.setItem('pdp_cam', camEnabled);
+            window.location.href = '/meeting/' + ROOM_ID;
+        }
+
+        document.getElementById('nameInput').addEventListener('keydown', e => {
+            if (e.key === 'Enter') joinMeeting();
+        });
+
+        // ── Boot ────────────────────────────────────
+        initMedia();
+    </script>
+</body>
+
+</html>

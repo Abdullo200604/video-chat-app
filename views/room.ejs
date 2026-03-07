@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uz">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Video Chat</title>
-    <link rel="stylesheet" href="style.css">
+    <title>PDP Chat – Majlis</title>
+    <link rel="stylesheet" href="/style.css">
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -13,111 +13,191 @@
     <script>const ROOM_ID = "<%= roomId %>";</script>
 </head>
 
-<body>
+<body class="meeting-body">
 
-    <!-- ════════════════════════════════════════════
-     NORMAL MODE LAYOUT
-════════════════════════════════════════════ -->
-    <div class="main-container" id="mainContainer">
-
-        <!-- Video area -->
-        <div class="main-left">
-            <div class="main-videos">
-                <div id="video-grid"></div>
-            </div>
-
-            <!-- Controls -->
-            <div class="main-controls">
-                <div class="main-controls-block">
-                    <div class="main-controls-button" id="muteButton" onclick="muteUnmute()">
-                        <i class="fas fa-microphone"></i>
-                        <span>Ovoz</span>
-                    </div>
-                    <div class="main-controls-button" id="playPauseVideo" onclick="playStop()">
-                        <i class="fas fa-video"></i>
-                        <span>Kamera</span>
-                    </div>
-                </div>
-                <div class="main-controls-block">
-                    <div class="main-controls-button" id="chatToggleBtn" onclick="togglePanel('chat')">
-                        <i class="fas fa-comment"></i>
-                        <span>Chat</span>
-                        <span class="badge" id="chatBadge"></span>
-                    </div>
-                    <div class="main-controls-button" id="effectsToggleBtn" onclick="togglePanel('effects')">
-                        <i class="fas fa-magic"></i>
-                        <span>Effekt</span>
-                    </div>
-                    <!-- Theater Mode Button (admin only) -->
-                    <div class="main-controls-button theater-btn hidden" id="theaterModeBtn"
-                        onclick="toggleTheaterMode()">
-                        <i class="fas fa-film"></i>
-                        <span>Theater</span>
-                    </div>
-                </div>
-                <div class="main-controls-block">
-                    <div class="main-controls-button leave-meeting" onclick="window.close()">
-                        <span class="leave-text">Tark etish</span>
-                    </div>
-                </div>
+    <!-- ── HEADER ── -->
+    <header class="meeting-header">
+        <div class="meeting-logo">
+            <div class="logo-icon-sm"><i class="fas fa-video"></i></div>
+            <span>PDP Chat</span>
+        </div>
+        <div class="meeting-meta">
+            <div class="meeting-timer" id="meetingTimer">00:00</div>
+            <div class="meeting-code">
+                <span id="meetingCodeText"></span>
+                <button class="icon-btn" onclick="copyMeetingLink()" title="Havolani nusxalash">
+                    <i class="fas fa-copy"></i>
+                </button>
             </div>
         </div>
+    </header>
 
-        <!-- Chat panel -->
-        <div class="side-panel" id="chatPanel">
-            <div class="panel-header">
-                <span>💬 Chat xabarlari</span>
-                <button class="close-panel-btn" onclick="togglePanel('chat')"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="main-chat-window">
-                <ul class="messages"></ul>
-            </div>
-            <div class="main-message-container">
-                <input id="chat_message" type="text" placeholder="Xabar yozing, Enter bosing...">
-            </div>
+    <!-- ── MAIN VIDEO AREA ── -->
+    <main class="video-area" id="videoArea">
+        <div class="video-grid" id="videoGrid"></div>
+    </main>
+
+    <!-- ── REACTION OVERLAY ── -->
+    <div class="reactions-overlay" id="reactionsOverlay"></div>
+
+    <!-- ── BOTTOM CONTROL BAR ── -->
+    <div class="control-bar" id="controlBar">
+        <div class="ctrl-group">
+            <button class="ctrl-btn" id="micBtn" onclick="toggleMic()" title="Mikrofon">
+                <i class="fas fa-microphone"></i>
+                <span>Mikrofon</span>
+            </button>
+            <button class="ctrl-btn" id="camBtn" onclick="toggleCam()" title="Kamera">
+                <i class="fas fa-video"></i>
+                <span>Kamera</span>
+            </button>
+            <button class="ctrl-btn" id="screenBtn" onclick="toggleScreenShare()" title="Ekran ulashish">
+                <i class="fas fa-desktop"></i>
+                <span>Ekran</span>
+            </button>
         </div>
-
-        <!-- Effects panel -->
-        <div class="side-panel" id="effectsPanel">
-            <div class="panel-header">
-                <span>✨ Video Effektlar</span>
-                <button class="close-panel-btn" onclick="togglePanel('effects')"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="effects-grid">
-                <div class="effect-card active" id="effect-none" onclick="applyEffect('none')">
-                    <div class="effect-preview effect-none-preview"><i class="fas fa-user"></i></div>
-                    <span>Asl ko'rinish</span>
-                </div>
-                <div class="effect-card" id="effect-blur" onclick="applyEffect('blur')">
-                    <div class="effect-preview effect-blur-preview"><i class="fas fa-user"></i></div>
-                    <span>Blur</span>
-                </div>
-                <div class="effect-card" id="effect-grayscale" onclick="applyEffect('grayscale')">
-                    <div class="effect-preview effect-grayscale-preview"><i class="fas fa-user"></i></div>
-                    <span>Kulrang</span>
-                </div>
-                <div class="effect-card" id="effect-sepia" onclick="applyEffect('sepia')">
-                    <div class="effect-preview effect-sepia-preview"><i class="fas fa-user"></i></div>
-                    <span>Vintage</span>
-                </div>
-                <div class="effect-card" id="effect-invert" onclick="applyEffect('invert')">
-                    <div class="effect-preview effect-invert-preview"><i class="fas fa-user"></i></div>
-                    <span>Teskari</span>
-                </div>
-                <div class="effect-card" id="effect-warm" onclick="applyEffect('warm')">
-                    <div class="effect-preview effect-warm-preview"><i class="fas fa-user"></i></div>
-                    <span>Iliq rang</span>
-                </div>
-            </div>
+        <div class="ctrl-group">
+            <button class="ctrl-btn" id="chatBtn" onclick="togglePanel('chat')" title="Chat">
+                <i class="fas fa-comment"></i>
+                <span>Chat</span>
+                <span class="badge" id="chatBadge"></span>
+            </button>
+            <button class="ctrl-btn" id="participantsBtn" onclick="togglePanel('participants')" title="Ishtirokchilar">
+                <i class="fas fa-users"></i>
+                <span>Ishtirokchilar</span>
+                <span class="badge badge-count" id="participantCount">1</span>
+            </button>
+            <button class="ctrl-btn" id="reactionsBtn" onclick="toggleReactionMenu()" title="Reaksiyalar">
+                <i class="fas fa-smile"></i>
+                <span>Reaksiya</span>
+            </button>
+            <button class="ctrl-btn" id="handBtn" onclick="raiseHand()" title="Qo'l ko'tarish">
+                <i class="fas fa-hand-paper"></i>
+                <span>Qo'l</span>
+            </button>
+            <button class="ctrl-btn host-only hidden" id="theaterBtn" onclick="toggleTheaterMode()"
+                title="Theater Mode">
+                <i class="fas fa-film"></i>
+                <span>Theater</span>
+            </button>
+            <button class="ctrl-btn host-only hidden" id="hostPanelBtn" onclick="togglePanel('host')" title="Boshqaruv">
+                <i class="fas fa-shield-alt"></i>
+                <span>Boshqaruv</span>
+            </button>
+        </div>
+        <div class="ctrl-group">
+            <button class="ctrl-btn" onclick="togglePanel('settings')" title="Sozlamalar">
+                <i class="fas fa-cog"></i>
+                <span>Sozlamalar</span>
+            </button>
+            <button class="ctrl-btn leave-btn" onclick="confirmLeave()" title="Chiqish">
+                <i class="fas fa-phone-slash"></i>
+                <span>Chiqish</span>
+            </button>
         </div>
     </div>
 
-    <!-- ════════════════════════════════════════════
-     THEATER MODE OVERLAY
-════════════════════════════════════════════ -->
-    <div class="theater-overlay" id="theaterOverlay">
+    <!-- ── REACTION PICKER ── -->
+    <div class="reaction-menu hidden" id="reactionMenu">
+        <button onclick="sendReaction('👍')">👍</button>
+        <button onclick="sendReaction('❤️')">❤️</button>
+        <button onclick="sendReaction('😂')">😂</button>
+        <button onclick="sendReaction('👏')">👏</button>
+        <button onclick="sendReaction('🔥')">🔥</button>
+        <button onclick="sendReaction('🎉')">🎉</button>
+        <button onclick="sendReaction('😮')">😮</button>
+        <button onclick="sendReaction('🙁')">🙁</button>
+    </div>
 
-        <!-- CSS Art Background: curtains + seats + ceiling -->
+    <!-- ══════════════ SIDE PANELS ══════════════ -->
+
+    <!-- Chat Panel -->
+    <div class="side-panel" id="chatPanel">
+        <div class="panel-hdr">
+            <span>💬 Chat</span>
+            <button class="panel-close" onclick="togglePanel('chat')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input-area" id="chatInputArea">
+            <input id="chatInput" type="text" placeholder="Xabar yozing...">
+            <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+        <div class="chat-disabled-msg hidden" id="chatDisabledMsg">
+            <i class="fas fa-lock"></i> Mezbon xabar yuborishni o'chirdi
+        </div>
+    </div>
+
+    <!-- Participants Panel -->
+    <div class="side-panel" id="participantsPanel">
+        <div class="panel-hdr">
+            <span>👥 Ishtirokchilar</span>
+            <button class="panel-close" onclick="togglePanel('participants')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="participants-list" id="participantsList"></div>
+    </div>
+
+    <!-- Host Panel -->
+    <div class="side-panel" id="hostPanel">
+        <div class="panel-hdr">
+            <span>🛡️ Majlis boshqaruvi</span>
+            <button class="panel-close" onclick="togglePanel('host')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="host-panel-body">
+            <h4 class="section-label">Kirish turi</h4>
+            <select id="accessTypeSelect" class="host-select" onchange="updateSetting('accessType', this.value)">
+                <option value="open">Ochiq – har kim kiradi</option>
+                <option value="trusted">Trusted – taklif qilinganlar</option>
+                <option value="request">So'rov – ruxsat kerak</option>
+            </select>
+
+            <h4 class="section-label">Ruxsatlar</h4>
+            <div class="perm-list">
+                <label class="toggle-row">
+                    <span><i class="fas fa-desktop"></i> Ekran ulashish</span>
+                    <input type="checkbox" id="perm-screenShare" checked
+                        onchange="updatePerm('screenShare', this.checked)">
+                </label>
+                <label class="toggle-row">
+                    <span><i class="fas fa-smile"></i> Reaksiyalar</span>
+                    <input type="checkbox" id="perm-reactions" checked onchange="updatePerm('reactions', this.checked)">
+                </label>
+                <label class="toggle-row">
+                    <span><i class="fas fa-microphone"></i> Ishtirokchi mik</span>
+                    <input type="checkbox" id="perm-participantMic" checked
+                        onchange="updatePerm('participantMic', this.checked)">
+                </label>
+                <label class="toggle-row">
+                    <span><i class="fas fa-video"></i> Ishtirokchi kamera</span>
+                    <input type="checkbox" id="perm-participantCamera" checked
+                        onchange="updatePerm('participantCamera', this.checked)">
+                </label>
+                <label class="toggle-row">
+                    <span><i class="fas fa-comment"></i> Chat</span>
+                    <input type="checkbox" id="perm-chat" checked onchange="toggleChatForAll(this.checked)">
+                </label>
+            </div>
+
+            <h4 class="section-label">Ishtirokchilar</h4>
+            <div class="participants-list host-list" id="hostParticipantsList"></div>
+        </div>
+    </div>
+
+    <!-- Settings Panel -->
+    <div class="side-panel" id="settingsPanel">
+        <div class="panel-hdr">
+            <span>⚙️ Sozlamalar</span>
+            <button class="panel-close" onclick="togglePanel('settings')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="host-panel-body">
+            <h4 class="section-label">Kamera</h4>
+            <select id="cameraSelect" class="host-select" onchange="switchCamera(this.value)"></select>
+            <h4 class="section-label">Mikrofon</h4>
+            <select id="micSelect" class="host-select" onchange="switchMic(this.value)"></select>
+        </div>
+    </div>
+
+    <!-- ══════════════ THEATER MODE ══════════════ -->
+    <div class="theater-overlay" id="theaterOverlay">
         <div class="theater-bg">
             <div class="theater-ceiling"></div>
             <div class="curtain-left">
@@ -137,66 +217,57 @@
             <div class="stage-light left-light"></div>
             <div class="stage-light right-light"></div>
         </div>
-
-        <!-- Proscenium arch frame + screen -->
         <div class="theater-content">
             <div class="proscenium-arch">
                 <div class="theater-screen-wrapper" id="theaterScreenWrapper" onclick="enterFocusMode()">
                     <div class="screen-shine"></div>
                     <div class="theater-screen-video" id="theaterMainVideo"></div>
                     <div class="screen-click-hint">
-                        <i class="fas fa-expand-arrows-alt"></i>
-                        <span>Kattalashtirish</span>
+                        <i class="fas fa-expand-arrows-alt"></i><span>Kattalashtirish</span>
                     </div>
                 </div>
             </div>
-
-            <!-- Participant avatar bubbles -->
             <div class="theater-avatars" id="theaterAvatars"></div>
         </div>
-
-        <!-- Theater bottom controls -->
         <div class="theater-controls">
-            <div class="main-controls-button" id="t-muteButton" onclick="muteUnmute()">
-                <i class="fas fa-microphone"></i>
-                <span>Ovoz</span>
-            </div>
-            <div class="main-controls-button" id="t-videoButton" onclick="playStop()">
-                <i class="fas fa-video"></i>
-                <span>Kamera</span>
-            </div>
-            <div class="main-controls-button" id="t-chatBtn" onclick="togglePanel('chat')">
-                <i class="fas fa-comment"></i>
-                <span>Chat</span>
-                <span class="badge" id="theaterChatBadge"></span>
-            </div>
-            <div class="main-controls-button" id="t-effectsBtn" onclick="togglePanel('effects')">
-                <i class="fas fa-magic"></i>
-                <span>Effekt</span>
-            </div>
-            <div class="main-controls-button theater-btn-active" id="t-theaterBtn" onclick="toggleTheaterMode()">
-                <i class="fas fa-times-circle"></i>
-                <span>Chiqish</span>
-            </div>
-            <div class="main-controls-button leave-meeting" onclick="window.close()">
-                <span class="leave-text">Tark etish</span>
-            </div>
+            <button class="ctrl-btn" id="t-micBtn" onclick="toggleMic()"><i
+                    class="fas fa-microphone"></i><span>Ovoz</span></button>
+            <button class="ctrl-btn" id="t-camBtn" onclick="toggleCam()"><i
+                    class="fas fa-video"></i><span>Kamera</span></button>
+            <button class="ctrl-btn" onclick="togglePanel('chat')"><i class="fas fa-comment"></i><span>Chat</span><span
+                    class="badge" id="t-chatBadge"></span></button>
+            <button class="ctrl-btn host-only hidden" id="t-theaterBtn" onclick="toggleTheaterMode()"><i
+                    class="fas fa-times-circle"></i><span>Chiqish</span></button>
+            <button class="ctrl-btn leave-btn" onclick="confirmLeave()"><i
+                    class="fas fa-phone-slash"></i><span>Chiqish</span></button>
         </div>
     </div>
 
-    <!-- ════════════════════════════════════════════
-     FOCUS MODE (click on screen → expand)
-════════════════════════════════════════════ -->
+    <!-- Focus Mode -->
     <div class="focus-overlay" id="focusOverlay" onclick="exitFocusMode()">
         <div class="focus-inner" id="focusInner" onclick="event.stopPropagation()">
-            <button class="focus-close-btn" onclick="exitFocusMode()">
-                <i class="fas fa-times"></i>
-            </button>
+            <button class="focus-close-btn" onclick="exitFocusMode()"><i class="fas fa-times"></i></button>
             <div class="focus-video-container" id="focusVideoContainer"></div>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <!-- Leave Confirm Modal -->
+    <div class="modal-overlay hidden" id="leaveModal">
+        <div class="confirm-modal">
+            <h3>Majlisdan chiqasizmi?</h3>
+            <p>Majlisni tark etsangiz boshqalar davom etadi.</p>
+            <div class="confirm-actions">
+                <button class="btn-cancel" onclick="document.getElementById('leaveModal').classList.add('hidden')">Bekor
+                    qilish</button>
+                <button class="btn-leave-confirm" onclick="leaveMeeting()">Chiqish</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notification -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="/script.js"></script>
 </body>
 
 </html>
