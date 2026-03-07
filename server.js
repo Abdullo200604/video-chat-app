@@ -4,11 +4,11 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 require('dotenv').config();
 
-const io = require('socket.io')(server);
-const { ExpressPeerServer } = require('peer');
-
 const app = express();
 app.set('trust proxy', 1); // For Render.com HTTPS
+const server = require('http').Server(app);
+const io = require('socket.io')(server);
+const { ExpressPeerServer } = require('peer');
 const { v4: uuidV4 } = require('uuid');
 const crypto = require('crypto');
 
