@@ -136,6 +136,31 @@ body {
     transform: translateY(0);
 }
 
+.btn-google-hero {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #fff;
+    color: #3c4043;
+    border: 1px solid #dadce0;
+    padding: 12px 24px;
+    border-radius: 24px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background .2s, box-shadow .2s;
+}
+
+.btn-google-hero:hover {
+    background: #f8f9fa;
+    box-shadow: 0 1px 3px rgba(60, 64, 67, .3), 0 4px 8px 3px rgba(60, 64, 67, .15);
+}
+
+.btn-google-hero img {
+    width: 20px;
+    height: 20px;
+}
+
 /* ═══ HERO ═══ */
 .hero {
     display: flex;
