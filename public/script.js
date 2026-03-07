@@ -50,7 +50,7 @@ const videoGrid = document.getElementById('videoGrid');
 
 // ── INIT ────────────────────────────────────────
 (async () => {
-    document.getElementById('meetingCodeText').textContent = ROOM_ID.substring(0, 8) + '…';
+    document.getElementById('meetingCodeText').textContent = ROOM_ID;
     startTimer();
     await loadDevices();
 
@@ -105,6 +105,7 @@ socket.on('room-state', state => {
     participants = state.participants || {};
     Object.assign(permissions, state.permissions || {});
     updateParticipantsUI();
+    if (state.startTime) startTimer(state.startTime);
     if (state.theaterMode) { theaterActive = true; enterTheaterUI(); }
 });
 socket.on('user-connected', (uid, name) => {
@@ -581,11 +582,13 @@ async function switchMic(deviceId) {
 }
 
 // ── TIMER ────────────────────────────────────────
-function startTimer() {
+let timerInterval;
+function startTimer(startTime) {
+    if (timerInterval) clearInterval(timerInterval);
     const el = document.getElementById('meetingTimer');
-    let secs = 0;
-    setInterval(() => {
-        secs++;
+
+    timerInterval = setInterval(() => {
+        const secs = Math.floor((Date.now() - startTime) / 1000);
         const h = Math.floor(secs / 3600);
         const m = Math.floor((secs % 3600) / 60);
         const s = secs % 60;
@@ -617,7 +620,18 @@ function showToast(msg, duration = 3000) {
 // ── COPY MEETING LINK ────────────────────────────
 function copyMeetingLink() {
     const url = window.location.origin + '/lobby/' + ROOM_ID;
-    navigator.clipboard.writeText(url).then(() => showToast('Havola nusxalandi! ✅'));
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(() => showToast('Havola nusxalandi! ✅'));
+    } else {
+        // Fallback for older browsers or insecure contexts
+        const textArea = document.createElement("textarea");
+        textArea.value = url;
+        document.body.appendChild(textArea);
+        textArea.select();
+        try { document.execCommand('copy'); showToast('Havola nusxalandi! ✅'); } catch (err) { }
+        document.body.removeChild(textArea);
+    }
 }
 
 // ── CLOSE REACTION MENU ON OUTSIDE CLICK ─────────

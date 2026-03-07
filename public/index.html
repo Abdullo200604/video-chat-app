@@ -238,13 +238,7 @@
                     <button class="btn-primary-sm" onclick="openModal()">Majlis boshlash</button>
                 `;
             } else {
-                // If not logged in, add a Google button to hero
-                const heroActions = document.getElementById('heroActions');
-                const googleBtn = document.createElement('button');
-                googleBtn.className = 'btn-google-hero';
-                googleBtn.onclick = () => window.location.href = '/auth/google';
-                googleBtn.innerHTML = '<img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="G"> <span>Google bilan kirish</span>';
-                heroActions.prepend(googleBtn);
+                // Not logged in - nothing additional needed in hero
             }
         }
         checkAuth();

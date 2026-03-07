@@ -9,6 +9,13 @@ const server = require('http').Server(app);
 const io = require('socket.io')(server);
 const { ExpressPeerServer } = require('peer');
 const { v4: uuidV4 } = require('uuid');
+const crypto = require('crypto');
+
+function generateShortId() {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  const part = () => Array.from({ length: 3 }, () => chars[crypto.randomInt(chars.length)]).join('');
+  return `${part()}-${part()}-${part()}`;
+}
 
 const peerServer = ExpressPeerServer(server, { debug: true });
 app.use('/peerjs', peerServer);
@@ -78,13 +85,14 @@ app.get('/', (req, res) => res.sendFile(__dirname + '/public/index.html'));
 
 // Generate a new meeting link (for "Majlis yaratish")
 app.post('/api/create-room', (req, res) => {
-  const roomId = uuidV4();
+  const roomId = generateShortId();
   const accessType = req.body.accessType || 'open'; // open | trusted | request
   rooms[roomId] = {
     host: null,
     accessType,
     theaterMode: false,
     chatEnabled: true,
+    startTime: Date.now(),
     permissions: {
       screenShare: true,
       reactions: true,
@@ -105,6 +113,7 @@ app.get('/lobby/:room', (req, res) => {
     rooms[roomId] = {
       host: null, accessType: 'open', theaterMode: false,
       chatEnabled: true,
+      startTime: Date.now(),
       permissions: { screenShare: true, reactions: true, participantMic: true, participantCamera: true },
       waitingRoom: [], participants: {}
     };
@@ -119,6 +128,7 @@ app.get('/meeting/:room', (req, res) => {
     rooms[roomId] = {
       host: null, accessType: 'open', theaterMode: false,
       chatEnabled: true,
+      startTime: Date.now(),
       permissions: { screenShare: true, reactions: true, participantMic: true, participantCamera: true },
       waitingRoom: [], participants: {}
     };
@@ -149,6 +159,7 @@ io.on('connection', socket => {
       rooms[roomId] = {
         host: null, accessType: 'open', theaterMode: false,
         chatEnabled: true,
+        startTime: Date.now(),
         permissions: { screenShare: true, reactions: true, participantMic: true, participantCamera: true },
         waitingRoom: [], participants: {}
       };
@@ -170,6 +181,7 @@ io.on('connection', socket => {
       chatEnabled: room.chatEnabled,
       permissions: room.permissions,
       participants: room.participants,
+      startTime: room.startTime,
       isHost
     });
 
