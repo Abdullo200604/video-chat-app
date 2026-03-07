@@ -158,28 +158,33 @@ io.on('connection', socket => {
   let currentUserId = null;
   let currentName = 'Mehmon';
 
-  socket.on('join-room', (roomId, userId, displayName) => {
+  socket.on('join-room', (roomId, userId, name, initialStatus = {}) => {
     currentRoomId = roomId;
     currentUserId = userId;
-    currentName = displayName || 'Mehmon';
-
     if (!rooms[roomId]) {
       rooms[roomId] = {
-        host: null, accessType: 'open', theaterMode: false,
+        host: userId, accessType: 'open', theaterMode: false,
         chatEnabled: true,
         startTime: Date.now(),
         permissions: { screenShare: true, reactions: true, participantMic: true, participantCamera: true },
         waitingRoom: [], participants: {}
       };
     }
-
     const room = rooms[roomId];
-    socket.join(roomId);
-
-    // First person = host
-    const isHost = room.host === null;
+    const isHost = room.host === userId || !room.host;
     if (isHost) room.host = userId;
-    room.participants[userId] = { name: currentName, muted: false, videoOff: false, effect: 'none' };
+
+    currentName = name || 'Mehmon'; // Use the passed 'name' or default
+
+    room.participants[userId] = {
+      name: currentName,
+      isHost,
+      muted: initialStatus.muted ?? false,
+      videoOff: initialStatus.videoOff ?? false,
+      effect: initialStatus.effect ?? 'none'
+    };
+
+    socket.join(roomId); // Moved socket.join here
 
     if (isHost) socket.emit('you-are-host');
 

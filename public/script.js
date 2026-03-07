@@ -76,7 +76,8 @@ const videoGrid = document.getElementById('videoGrid');
 
 myPeer.on('open', id => {
     myPeerId = id;
-    socket.emit('join-room', ROOM_ID, id, myName);
+    const status = { muted: !micOn, videoOff: !camOn, effect: currentEffect };
+    socket.emit('join-room', ROOM_ID, id, myName, status);
 });
 
 myPeer.on('call', call => {
@@ -129,6 +130,7 @@ socket.on('room-state', state => {
     Object.assign(permissions, state.permissions || {});
     updateParticipantsUI();
     if (state.startTime) startTimer(state.startTime);
+    syncEffects();
     if (state.theaterMode) { theaterActive = true; enterTheaterUI(); }
 });
 socket.on('user-connected', (uid, name) => {
@@ -382,16 +384,7 @@ function applyEffect(name) {
 }
 
 function syncEffects() {
-    Object.entries(participants).forEach(([uid, info]) => {
-        if (uid === myPeerId) return; // Don't override local preview if me
-        const tile = tiles[uid];
-        if (tile) {
-            const vid = tile.querySelector('video');
-            if (vid && info.effect) {
-                vid.style.filter = effectFilters[info.effect] || '';
-            }
-        }
-    });
+    updateParticipantsUI(); // centralize
 }
 
 // ── HOSTS CONTROLS ───────────────────────────────
@@ -424,7 +417,7 @@ function updateParticipantsUI() {
         const initial = (info.name || 'M').charAt(0).toUpperCase();
         const isMe_ = uid === myPeerId;
 
-        // Sync tile visibility if video state changed
+        // Sync tile visibility & effect if state changed
         const tile = tiles[isMe_ ? 'me' : uid];
         if (tile) {
             const v = tile.querySelector('video');
@@ -433,6 +426,10 @@ function updateParticipantsUI() {
                 const off = isMe_ ? !camOn : !!info.videoOff;
                 v.classList.toggle('hidden', off);
                 a.classList.toggle('hidden', !off);
+
+                // Sync effect
+                const effect = isMe_ ? currentEffect : (info.effect || 'none');
+                v.style.filter = effectFilters[effect] || '';
             }
         }
 
