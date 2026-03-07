@@ -160,7 +160,7 @@ io.on('connection', socket => {
     // First person = host
     const isHost = room.host === null;
     if (isHost) room.host = userId;
-    room.participants[userId] = { name: currentName, muted: false, videoOff: false };
+    room.participants[userId] = { name: currentName, muted: false, videoOff: false, effect: 'none' };
 
     if (isHost) socket.emit('you-are-host');
 

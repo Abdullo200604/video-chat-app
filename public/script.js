@@ -118,6 +118,7 @@ socket.on('user-disconnected', uid => {
 socket.on('participants-update', data => {
     participants = data;
     updateParticipantsUI();
+    syncEffects();
 });
 socket.on('createMessage', msg => addChatMessage(msg));
 socket.on('theater-mode-changed', on => {
@@ -163,6 +164,11 @@ function addTile(stream, peerId, name, isMe) {
 
     tile.appendChild(vid);
     tile.appendChild(info);
+
+    // Apply existing effect if any
+    const effect = isMe ? currentEffect : (participants[peerId]?.effect || 'none');
+    vid.style.filter = effectFilters[effect] || '';
+
     videoGrid.appendChild(tile);
     tiles[peerId] = tile;
     streams[peerId] = stream;
@@ -327,10 +333,24 @@ function applyEffect(name) {
         const vid = tiles['me'].querySelector('video');
         if (vid) vid.style.filter = effectFilters[name];
     }
+    socket.emit('status-update', { effect: name });
     document.querySelectorAll('.effect-card').forEach(c => c.classList.remove('active'));
     const card = document.getElementById('effect-' + name);
     if (card) card.classList.add('active');
     showToast(`Effekt: ${name} qo'llanildi ✨`);
+}
+
+function syncEffects() {
+    Object.entries(participants).forEach(([uid, info]) => {
+        if (uid === myPeerId) return; // Don't override local preview if me
+        const tile = tiles[uid];
+        if (tile) {
+            const vid = tile.querySelector('video');
+            if (vid && info.effect) {
+                vid.style.filter = effectFilters[info.effect] || '';
+            }
+        }
+    });
 }
 
 // ── HOSTS CONTROLS ───────────────────────────────
