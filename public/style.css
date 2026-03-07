@@ -1,3 +1,6 @@
+/* ═══════════════════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════════════════ */
 * {
     margin: 0;
     padding: 0;
@@ -6,13 +9,19 @@
 }
 
 body {
-    background-color: #202124;
+    background: #202124;
     color: white;
     overflow: hidden;
     height: 100vh;
 }
 
-/* ═══ ANA KONTEYNER ═══ */
+.hidden {
+    display: none !important;
+}
+
+/* ═══════════════════════════════════════════════════
+   NORMAL MODE LAYOUT
+═══════════════════════════════════════════════════ */
 .main-container {
     display: flex;
     height: 100vh;
@@ -21,18 +30,16 @@ body {
     overflow: hidden;
 }
 
-/* ═══ CHAP QISM (Video) ═══ */
 .main-left {
     flex: 1;
     display: flex;
     flex-direction: column;
     min-width: 0;
-    transition: margin-right 0.3s ease;
 }
 
 .main-videos {
     flex-grow: 1;
-    background-color: #202124;
+    background: #202124;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -50,18 +57,20 @@ body {
     height: 100%;
 }
 
-video {
+#video-grid video {
     width: 300px;
     height: 200px;
     object-fit: cover;
     border-radius: 10px;
-    background-color: #3C4043;
+    background: #3C4043;
     transform: scaleX(-1);
 }
 
-/* ═══ BOSHQARUV TUGMALARI ═══ */
+/* ═══════════════════════════════════════════════════
+   CONTROLS BAR (shared by normal + theater)
+═══════════════════════════════════════════════════ */
 .main-controls {
-    background-color: #202124;
+    background: #202124;
     padding: 10px 14px;
     display: flex;
     justify-content: center;
@@ -84,20 +93,20 @@ video {
     padding: 10px 14px;
     cursor: pointer;
     border-radius: 10px;
-    transition: background-color 0.2s ease, transform 0.1s ease;
-    background-color: #3C4043;
+    transition: background .2s, transform .1s;
+    background: #3C4043;
     min-width: 68px;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
     position: relative;
 }
 
-.main-controls-button:active {
-    transform: scale(0.94);
+.main-controls-button:hover {
+    background: #4f5356;
 }
 
-.main-controls-button:hover {
-    background-color: #4f5356;
+.main-controls-button:active {
+    transform: scale(.94);
 }
 
 .main-controls-button i {
@@ -111,14 +120,25 @@ video {
 }
 
 .main-controls-button.active-panel {
-    background-color: #1a73e8;
+    background: #1a73e8;
 }
 
-/* Xabar badge */
+.theater-btn {
+    background: linear-gradient(135deg, #4a1942, #7b2f8f);
+}
+
+.theater-btn:hover {
+    background: linear-gradient(135deg, #5c2255, #9639ab);
+}
+
+.theater-btn-active {
+    background: linear-gradient(135deg, #7b2f8f, #4a1942);
+}
+
 .badge {
     position: absolute;
-    top: 6px;
-    right: 6px;
+    top: 5px;
+    right: 5px;
     background: #ea4335;
     color: white;
     border-radius: 50%;
@@ -141,14 +161,14 @@ video {
 }
 
 .leave-meeting {
-    background-color: #ea4335;
+    background: #ea4335;
     color: white;
     border-radius: 20px;
     padding: 10px 18px;
 }
 
 .leave-meeting:hover {
-    background-color: #d93025;
+    background: #d93025;
 }
 
 .leave-text {
@@ -156,11 +176,13 @@ video {
     font-weight: 500;
 }
 
-/* ═══ YON PANELLAR (Chat va Effektlar) ═══ */
+/* ═══════════════════════════════════════════════════
+   SIDE PANELS (Chat & Effects)
+═══════════════════════════════════════════════════ */
 .side-panel {
     width: 300px;
     height: 100vh;
-    background-color: #ffffff;
+    background: #fff;
     display: flex;
     flex-direction: column;
     color: #3C4043;
@@ -168,9 +190,9 @@ video {
     position: absolute;
     right: 0;
     top: 0;
-    z-index: 100;
-    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.4);
+    z-index: 200;
+    transition: transform .35s cubic-bezier(.4, 0, .2, 1);
+    box-shadow: -4px 0 20px rgba(0, 0, 0, .4);
 }
 
 .side-panel.open {
@@ -179,7 +201,7 @@ video {
 
 .panel-header {
     padding: 14px 16px;
-    background-color: #202124;
+    background: #202124;
     color: white;
     display: flex;
     justify-content: space-between;
@@ -197,20 +219,19 @@ video {
     font-size: 16px;
     padding: 4px 8px;
     border-radius: 6px;
-    transition: color 0.2s, background 0.2s;
+    transition: color .2s, background .2s;
 }
 
 .close-panel-btn:hover {
     color: white;
-    background-color: #3C4043;
+    background: #3C4043;
 }
 
-/* ═══ CHAT PANELI ═══ */
 .main-chat-window {
     flex-grow: 1;
     overflow-y: auto;
     padding: 12px;
-    background-color: #f1f3f4;
+    background: #f1f3f4;
 }
 
 .messages {
@@ -222,12 +243,12 @@ video {
 
 .messages li {
     padding: 8px 12px;
-    background-color: #e8eaed;
+    background: #e8eaed;
     border-radius: 10px;
     font-size: 13px;
     word-break: break-word;
     line-height: 1.5;
-    animation: msgIn 0.2s ease;
+    animation: msgIn .2s ease;
 }
 
 @keyframes msgIn {
@@ -261,14 +282,14 @@ video {
     border-color: #1a73e8;
 }
 
-/* ═══ EFFEKTLAR PANELI ═══ */
+/* Effects panel */
 .effects-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
     padding: 16px;
     overflow-y: auto;
-    background-color: #f1f3f4;
+    background: #f1f3f4;
     flex-grow: 1;
 }
 
@@ -282,23 +303,23 @@ video {
     padding: 12px 8px;
     background: white;
     border: 2px solid transparent;
-    transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+    transition: border-color .2s, transform .15s, box-shadow .2s;
     user-select: none;
 }
 
 .effect-card:hover {
     border-color: #1a73e8;
-    box-shadow: 0 2px 8px rgba(26, 115, 232, 0.2);
+    box-shadow: 0 2px 8px rgba(26, 115, 232, .2);
     transform: translateY(-2px);
 }
 
 .effect-card.active {
     border-color: #1a73e8;
-    background-color: #e8f0fe;
+    background: #e8f0fe;
 }
 
 .effect-card:active {
-    transform: scale(0.96);
+    transform: scale(.96);
 }
 
 .effect-card span {
@@ -318,7 +339,6 @@ video {
     font-size: 28px;
 }
 
-/* Effect preview styles */
 .effect-none-preview {
     background: linear-gradient(135deg, #667eea, #764ba2);
     color: white;
@@ -351,10 +371,384 @@ video {
     color: white;
 }
 
-/* ═══════════════════════════════════
-   MOBIL (max-width: 768px)
-═══════════════════════════════════ */
-@media (max-width: 768px) {
+/* ═══════════════════════════════════════════════════
+   THEATER OVERLAY
+═══════════════════════════════════════════════════ */
+.theater-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .6s ease;
+}
+
+.theater-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+/* ─── CSS Art: Theater Background ─── */
+.theater-bg {
+    position: absolute;
+    inset: 0;
+    background:
+        /* Stage lighting from above */
+        radial-gradient(ellipse 70% 35% at 50% 10%, rgba(255, 210, 120, .18) 0%, transparent 60%),
+        /* Ambient glow for the screen area */
+        radial-gradient(ellipse 50% 60% at 50% 40%, rgba(130, 80, 200, .08) 0%, transparent 65%),
+        /* Dark theater walls */
+        linear-gradient(180deg, #120308 0%, #0a0205 100%);
+    overflow: hidden;
+}
+
+/* Golden ceiling trim */
+.theater-ceiling {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: linear-gradient(90deg, #6b4800, #d4a017, #f5c842, #d4a017, #6b4800);
+    box-shadow: 0 0 18px 4px rgba(212, 160, 23, .5);
+}
+
+/* Left curtain */
+.curtain-left {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: clamp(90px, 13vw, 160px);
+    height: 80%;
+    background: linear-gradient(90deg, #6b0010 0%, #a80018 40%, #c5001e 70%, #8b0015 85%, transparent 100%);
+    clip-path: polygon(0 0, 100% 0, 88% 50%, 100% 100%, 0 100%);
+    z-index: 2;
+}
+
+.curtain-left .curtain-fold {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(90deg, transparent 0, transparent 14px,
+            rgba(0, 0, 0, .28) 14px, rgba(0, 0, 0, .28) 18px);
+}
+
+/* Right curtain */
+.curtain-right {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: clamp(90px, 13vw, 160px);
+    height: 80%;
+    background: linear-gradient(-90deg, #6b0010 0%, #a80018 40%, #c5001e 70%, #8b0015 85%, transparent 100%);
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 12% 100%, 0 50%);
+    z-index: 2;
+}
+
+.curtain-right .curtain-fold {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(90deg, rgba(0, 0, 0, .28) 0, rgba(0, 0, 0, .28) 4px, transparent 4px, transparent 18px);
+}
+
+/* Stage floor / rows of seats */
+.theater-seats {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 38%;
+    background: linear-gradient(180deg, #1a0509 0%, #0a0203 100%);
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    padding-bottom: 6px;
+    gap: 0;
+    overflow: hidden;
+}
+
+.seat-row {
+    width: calc(55% + var(--r) * 8%);
+    height: 18px;
+    background: repeating-linear-gradient(90deg,
+            #7a1520 0, #7a1520 19px,
+            #4a0b10 19px, #4a0b10 24px);
+    border-radius: 5px 5px 0 0;
+    margin-top: 3px;
+    opacity: calc(.3 + var(--r) * .1);
+    box-shadow: 0 -3px 6px rgba(0, 0, 0, .4);
+}
+
+/* Stage spotlights */
+.stage-light {
+    position: absolute;
+    top: 0;
+    width: 200px;
+    height: 65%;
+    opacity: .12;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.left-light {
+    left: 10%;
+    transform-origin: top left;
+    background: conic-gradient(from -10deg at 50% 0%, rgba(255, 240, 160, .8) 0deg, transparent 30deg);
+}
+
+.right-light {
+    right: 10%;
+    transform-origin: top right;
+    background: conic-gradient(from 190deg at 50% 0%, rgba(255, 240, 160, .8) 0deg, transparent 30deg);
+}
+
+/* ─── Theater main content area ─── */
+.theater-content {
+    position: relative;
+    z-index: 3;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 0 clamp(90px, 14vw, 160px);
+    padding-top: 10px;
+}
+
+/* Golden proscenium arch frame */
+.proscenium-arch {
+    width: 100%;
+    max-width: 900px;
+    padding: 4px;
+    border: 3px solid;
+    border-image: linear-gradient(135deg, #b8860b, #ffd700, #daa520, #ffd700, #b8860b) 1;
+    border-radius: 4px;
+    box-shadow: 0 0 30px rgba(212, 175, 55, .3), inset 0 0 20px rgba(212, 175, 55, .05);
+    background: rgba(0, 0, 0, .6);
+}
+
+/* Theater screen */
+.theater-screen-wrapper {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/9;
+    overflow: hidden;
+    cursor: pointer;
+    border-radius: 2px;
+    background: #050505;
+}
+
+.screen-shine {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    background: linear-gradient(135deg, rgba(255, 255, 255, .04) 0%, transparent 50%, rgba(0, 0, 0, .15) 100%);
+    pointer-events: none;
+}
+
+.theater-screen-video {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.theater-screen-video video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+    filter: brightness(1.05);
+}
+
+/* Expand hint on hover */
+.screen-click-hint {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: white;
+    font-size: 14px;
+    background: rgba(0, 0, 0, .4);
+    opacity: 0;
+    transition: opacity .3s;
+}
+
+.theater-screen-wrapper:hover .screen-click-hint {
+    opacity: 1;
+}
+
+.screen-click-hint i {
+    font-size: 32px;
+}
+
+/* ─── Participant Avatars ─── */
+.theater-avatars {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px 0 4px;
+    max-width: 900px;
+    width: 100%;
+}
+
+.theater-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid rgba(255, 220, 120, .7);
+    box-shadow: 0 0 10px rgba(255, 200, 80, .3);
+    background: #3C4043;
+    flex-shrink: 0;
+    position: relative;
+    animation: avatarPop .4s ease;
+}
+
+@keyframes avatarPop {
+    from {
+        transform: scale(0);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.theater-avatar video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+    pointer-events: none;
+}
+
+.theater-avatar .avatar-label {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, .55);
+    font-size: 8px;
+    text-align: center;
+    padding: 2px;
+    color: white;
+}
+
+/* ─── Theater controls bar ─── */
+.theater-controls {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 8px 12px;
+    background: rgba(10, 2, 5, .85);
+    border-top: 1px solid rgba(212, 175, 55, .2);
+    backdrop-filter: blur(8px);
+}
+
+/* ═══════════════════════════════════════════════════
+   FOCUS MODE (fullscreen expanded screen)
+═══════════════════════════════════════════════════ */
+.focus-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(0, 0, 0, .92);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .4s ease;
+}
+
+.focus-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.focus-inner {
+    position: relative;
+    width: 92vw;
+    max-width: 1400px;
+    aspect-ratio: 16/9;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 0 80px rgba(255, 200, 80, .15);
+    border: 1px solid rgba(212, 175, 55, .2);
+    animation: focusIn .4s ease;
+}
+
+@keyframes focusIn {
+    from {
+        transform: scale(.85);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.focus-close-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 2;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, .15);
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .2s;
+}
+
+.focus-close-btn:hover {
+    background: rgba(255, 255, 255, .3);
+}
+
+.focus-video-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #000;
+}
+
+.focus-video-container video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transform: scaleX(-1);
+}
+
+/* ═══════════════════════════════════════════════════
+   MOBILE RESPONSIVE
+═══════════════════════════════════════════════════ */
+@media (max-width:768px) {
     body {
         overflow: auto;
         height: 100%;
@@ -371,7 +765,18 @@ video {
         height: 100vh;
     }
 
-    /* Panellar pastdan chiqadi */
+    #video-grid video {
+        width: calc(50% - 5px);
+        height: auto;
+        aspect-ratio: 4/3;
+        max-width: 100%;
+        border-radius: 8px;
+    }
+
+    #video-grid video:only-child {
+        width: 100%;
+    }
+
     .side-panel {
         width: 100%;
         height: 70vh;
@@ -386,26 +791,33 @@ video {
         transform: translateY(0);
     }
 
-    video {
-        width: calc(50% - 5px);
-        height: auto;
-        aspect-ratio: 4/3;
-        max-width: 100%;
-        border-radius: 8px;
+    .effects-grid {
+        grid-template-columns: 1fr 1fr 1fr;
     }
 
-    #video-grid video:only-child {
-        width: 100%;
+    .curtain-left,
+    .curtain-right {
+        width: 60px;
+    }
+
+    .theater-content {
+        padding: 0 65px;
+        padding-top: 6px;
+    }
+
+    .theater-avatar {
+        width: 44px;
+        height: 44px;
     }
 
     .main-controls {
-        gap: 6px;
-        padding: 8px 10px;
+        gap: 5px;
+        padding: 6px 8px;
     }
 
     .main-controls-button {
-        min-width: 56px;
-        padding: 8px 10px;
+        min-width: 52px;
+        padding: 7px 8px;
     }
 
     .main-controls-button i {
@@ -413,10 +825,10 @@ video {
     }
 
     .main-controls-button span {
-        font-size: 10px;
+        font-size: 9px;
     }
 
-    .effects-grid {
-        grid-template-columns: 1fr 1fr 1fr;
+    .focus-inner {
+        width: 98vw;
     }
 }

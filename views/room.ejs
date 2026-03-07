@@ -4,30 +4,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Suhbat Ilovasi | Video Chat</title>
+    <title>Video Chat</title>
     <link rel="stylesheet" href="style.css">
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    <script>
-        const ROOM_ID = "<%= roomId %>";
-    </script>
+    <script>const ROOM_ID = "<%= roomId %>";</script>
 </head>
 
 <body>
-    <div class="main-container">
 
-        <!-- ═══ Video qismi (chap) ═══ -->
+    <!-- ════════════════════════════════════════════
+     NORMAL MODE LAYOUT
+════════════════════════════════════════════ -->
+    <div class="main-container" id="mainContainer">
+
+        <!-- Video area -->
         <div class="main-left">
             <div class="main-videos">
                 <div id="video-grid"></div>
             </div>
 
-            <!-- Boshqaruv tugmalari -->
+            <!-- Controls -->
             <div class="main-controls">
-
-                <!-- Blok 1: Mikrofon + Kamera -->
                 <div class="main-controls-block">
                     <div class="main-controls-button" id="muteButton" onclick="muteUnmute()">
                         <i class="fas fa-microphone"></i>
@@ -38,8 +38,6 @@
                         <span>Kamera</span>
                     </div>
                 </div>
-
-                <!-- Blok 2: Chat + Effekt -->
                 <div class="main-controls-block">
                     <div class="main-controls-button" id="chatToggleBtn" onclick="togglePanel('chat')">
                         <i class="fas fa-comment"></i>
@@ -50,9 +48,13 @@
                         <i class="fas fa-magic"></i>
                         <span>Effekt</span>
                     </div>
+                    <!-- Theater Mode Button (admin only) -->
+                    <div class="main-controls-button theater-btn hidden" id="theaterModeBtn"
+                        onclick="toggleTheaterMode()">
+                        <i class="fas fa-film"></i>
+                        <span>Theater</span>
+                    </div>
                 </div>
-
-                <!-- Blok 3: Tark etish -->
                 <div class="main-controls-block">
                     <div class="main-controls-button leave-meeting" onclick="window.close()">
                         <span class="leave-text">Tark etish</span>
@@ -61,7 +63,7 @@
             </div>
         </div>
 
-        <!-- ═══ Chat paneli (o'ng) ═══ -->
+        <!-- Chat panel -->
         <div class="side-panel" id="chatPanel">
             <div class="panel-header">
                 <span>💬 Chat xabarlari</span>
@@ -75,7 +77,7 @@
             </div>
         </div>
 
-        <!-- ═══ Effektlar paneli (o'ng) ═══ -->
+        <!-- Effects panel -->
         <div class="side-panel" id="effectsPanel">
             <div class="panel-header">
                 <span>✨ Video Effektlar</span>
@@ -83,44 +85,115 @@
             </div>
             <div class="effects-grid">
                 <div class="effect-card active" id="effect-none" onclick="applyEffect('none')">
-                    <div class="effect-preview effect-none-preview">
-                        <i class="fas fa-user"></i>
-                    </div>
+                    <div class="effect-preview effect-none-preview"><i class="fas fa-user"></i></div>
                     <span>Asl ko'rinish</span>
                 </div>
                 <div class="effect-card" id="effect-blur" onclick="applyEffect('blur')">
-                    <div class="effect-preview effect-blur-preview">
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <span>Blur (loyqa)</span>
+                    <div class="effect-preview effect-blur-preview"><i class="fas fa-user"></i></div>
+                    <span>Blur</span>
                 </div>
                 <div class="effect-card" id="effect-grayscale" onclick="applyEffect('grayscale')">
-                    <div class="effect-preview effect-grayscale-preview">
-                        <i class="fas fa-user"></i>
-                    </div>
+                    <div class="effect-preview effect-grayscale-preview"><i class="fas fa-user"></i></div>
                     <span>Kulrang</span>
                 </div>
                 <div class="effect-card" id="effect-sepia" onclick="applyEffect('sepia')">
-                    <div class="effect-preview effect-sepia-preview">
-                        <i class="fas fa-user"></i>
-                    </div>
+                    <div class="effect-preview effect-sepia-preview"><i class="fas fa-user"></i></div>
                     <span>Vintage</span>
                 </div>
                 <div class="effect-card" id="effect-invert" onclick="applyEffect('invert')">
-                    <div class="effect-preview effect-invert-preview">
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <span>Teskari rang</span>
+                    <div class="effect-preview effect-invert-preview"><i class="fas fa-user"></i></div>
+                    <span>Teskari</span>
                 </div>
                 <div class="effect-card" id="effect-warm" onclick="applyEffect('warm')">
-                    <div class="effect-preview effect-warm-preview">
-                        <i class="fas fa-user"></i>
-                    </div>
+                    <div class="effect-preview effect-warm-preview"><i class="fas fa-user"></i></div>
                     <span>Iliq rang</span>
                 </div>
             </div>
         </div>
+    </div>
 
+    <!-- ════════════════════════════════════════════
+     THEATER MODE OVERLAY
+════════════════════════════════════════════ -->
+    <div class="theater-overlay" id="theaterOverlay">
+
+        <!-- CSS Art Background: curtains + seats + ceiling -->
+        <div class="theater-bg">
+            <div class="theater-ceiling"></div>
+            <div class="curtain-left">
+                <div class="curtain-fold"></div>
+            </div>
+            <div class="curtain-right">
+                <div class="curtain-fold"></div>
+            </div>
+            <div class="theater-seats">
+                <div class="seat-row" style="--r:1"></div>
+                <div class="seat-row" style="--r:2"></div>
+                <div class="seat-row" style="--r:3"></div>
+                <div class="seat-row" style="--r:4"></div>
+                <div class="seat-row" style="--r:5"></div>
+                <div class="seat-row" style="--r:6"></div>
+            </div>
+            <div class="stage-light left-light"></div>
+            <div class="stage-light right-light"></div>
+        </div>
+
+        <!-- Proscenium arch frame + screen -->
+        <div class="theater-content">
+            <div class="proscenium-arch">
+                <div class="theater-screen-wrapper" id="theaterScreenWrapper" onclick="enterFocusMode()">
+                    <div class="screen-shine"></div>
+                    <div class="theater-screen-video" id="theaterMainVideo"></div>
+                    <div class="screen-click-hint">
+                        <i class="fas fa-expand-arrows-alt"></i>
+                        <span>Kattalashtirish</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Participant avatar bubbles -->
+            <div class="theater-avatars" id="theaterAvatars"></div>
+        </div>
+
+        <!-- Theater bottom controls -->
+        <div class="theater-controls">
+            <div class="main-controls-button" id="t-muteButton" onclick="muteUnmute()">
+                <i class="fas fa-microphone"></i>
+                <span>Ovoz</span>
+            </div>
+            <div class="main-controls-button" id="t-videoButton" onclick="playStop()">
+                <i class="fas fa-video"></i>
+                <span>Kamera</span>
+            </div>
+            <div class="main-controls-button" id="t-chatBtn" onclick="togglePanel('chat')">
+                <i class="fas fa-comment"></i>
+                <span>Chat</span>
+                <span class="badge" id="theaterChatBadge"></span>
+            </div>
+            <div class="main-controls-button" id="t-effectsBtn" onclick="togglePanel('effects')">
+                <i class="fas fa-magic"></i>
+                <span>Effekt</span>
+            </div>
+            <div class="main-controls-button theater-btn-active" id="t-theaterBtn" onclick="toggleTheaterMode()">
+                <i class="fas fa-times-circle"></i>
+                <span>Chiqish</span>
+            </div>
+            <div class="main-controls-button leave-meeting" onclick="window.close()">
+                <span class="leave-text">Tark etish</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════
+     FOCUS MODE (click on screen → expand)
+════════════════════════════════════════════ -->
+    <div class="focus-overlay" id="focusOverlay" onclick="exitFocusMode()">
+        <div class="focus-inner" id="focusInner" onclick="event.stopPropagation()">
+            <button class="focus-close-btn" onclick="exitFocusMode()">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="focus-video-container" id="focusVideoContainer"></div>
+        </div>
     </div>
 
     <script src="script.js"></script>
