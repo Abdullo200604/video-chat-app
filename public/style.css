@@ -35,50 +35,47 @@ body.meeting-body {
     display: none !important;
 }
 
-/* ════ HEADER ════ */
+/* ── Header ── */
 .meeting-header {
+    height: 64px;
+    padding: 0 20px;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 10px 20px;
+    justify-content: space-between;
     background: var(--bg-dark);
     border-bottom: 1px solid var(--border);
-    height: 54px;
-    flex-shrink: 0;
-    z-index: 10;
+    z-index: 100;
 }
 
-.meeting-logo {
+.header-left {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 15px;
-    font-weight: 500;
+    gap: 24px;
 }
 
-.logo-icon-sm {
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-    background: linear-gradient(135deg, var(--blue), #0d47a1);
+.nav-logo {
     display: flex;
     align-items: center;
-    justify-content: center;
-    font-size: 13px;
+    gap: 12px;
+    text-decoration: none;
+    color: white;
 }
 
-.meeting-meta {
-    display: flex;
-    align-items: center;
-    gap: 16px;
+.logo-img {
+    height: 36px;
+    width: auto;
+    object-fit: contain;
+}
+
+.logo-text {
+    font-size: 18px;
+    font-weight: 400;
 }
 
 .meeting-timer {
-    font-size: 14px;
-    color: var(--muted);
-    font-variant-numeric: tabular-nums;
-    font-weight: 500;
-    letter-spacing: .5px;
+    font-size: 18px;
+    font-weight: 400;
+    color: #e8eaed;
 }
 
 .meeting-code {

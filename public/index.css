@@ -36,8 +36,15 @@ body {
 .nav-logo {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     text-decoration: none;
+    color: #202124;
+}
+
+.logo-img {
+    height: 40px;
+    width: auto;
+    object-fit: contain;
 }
 
 .logo-icon {
