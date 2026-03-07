@@ -137,8 +137,21 @@
             if (e.key === 'Enter') joinMeeting();
         });
 
+        // ── Auth Check ──────────────────────────────
+        async function checkAuth() {
+            const res = await fetch('/api/user');
+            const user = await res.json();
+            if (user && user.name) {
+                const input = document.getElementById('nameInput');
+                input.value = user.name;
+                // Trigger input event to update UI (avatar and join button)
+                input.dispatchEvent(new Event('input'));
+            }
+        }
+
         // ── Boot ────────────────────────────────────
         initMedia();
+        checkAuth();
     </script>
 </body>
 

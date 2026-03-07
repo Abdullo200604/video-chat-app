@@ -20,8 +20,8 @@
             <img src="/logo.png" alt="PDP Logo" class="logo-img">
             <span>PDP <strong>Chat</strong></span>
         </a>
-        <div class="nav-actions">
-            <button class="btn-text">Kirish</button>
+        <div class="nav-actions" id="navActions">
+            <button class="btn-text" onclick="window.location.href='/auth/google'">Kirish</button>
             <button class="btn-primary-sm" onclick="openModal()">Majlis boshlash</button>
         </div>
     </nav>
@@ -221,6 +221,23 @@
         document.getElementById('joinCodeInput').addEventListener('keydown', e => {
             if (e.key === 'Enter') joinByCode();
         });
+
+        // ── Auth Check ──────────────────────────────
+        async function checkAuth() {
+            const res = await fetch('/api/user');
+            const user = await res.json();
+            if (user) {
+                document.getElementById('navActions').innerHTML = `
+                    <div class="user-info-nav">
+                        ${user.avatar ? `<img src="${user.avatar}" class="nav-avatar">` : `<div class="nav-avatar-fallback">${user.name.charAt(0)}</div>`}
+                        <span class="nav-user-name">${user.name}</span>
+                        <a href="/logout" class="btn-logout-small" title="Chiqish"><i class="fas fa-sign-out-alt"></i></a>
+                    </div>
+                    <button class="btn-primary-sm" onclick="openModal()">Majlis boshlash</button>
+                `;
+            }
+        }
+        checkAuth();
     </script>
 </body>
 

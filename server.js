@@ -1,4 +1,9 @@
 const express = require('express');
+const session = require('express-session');
+const passport = require('passport');
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+require('dotenv').config();
+
 const app = express();
 const server = require('http').Server(app);
 const io = require('socket.io')(server);
@@ -10,12 +15,60 @@ app.use('/peerjs', peerServer);
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Sessiya sozlamalari
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'pdp_chat_secret',
+  resave: false,
+  saveUninitialized: true
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Foydalanuvchini sessiyada saqlash
+passport.serializeUser((user, done) => done(null, user));
+passport.deserializeUser((user, done) => done(null, user));
+
+// Google strategiyasi
+passport.use(new GoogleStrategy({
+  clientID: process.env.GOOGLE_CLIENT_ID,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  callbackURL: process.env.GOOGLE_CALLBACK_URL
+}, (accessToken, refreshToken, profile, done) => {
+  const user = {
+    id: profile.id,
+    name: profile.displayName,
+    email: profile.emails[0].value,
+    avatar: profile.photos[0]?.value
+  };
+  done(null, user);
+}));
 
 // ── Room state ──────────────────────────────
 const rooms = {};
 // rooms[id] = { host, accessType, permissions, participants, theaterMode }
 
 // ── Routes ──────────────────────────────────
+
+// Google auth routes
+app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+
+app.get('/auth/google/callback',
+  passport.authenticate('google', { failureRedirect: '/' }),
+  (req, res) => res.redirect('/')
+);
+
+// Chiqish
+app.get('/logout', (req, res) => {
+  req.logout(() => res.redirect('/'));
+});
+
+// API: Get current user
+app.get('/api/user', (req, res) => {
+  res.json(req.user || null);
+});
 
 // Landing page
 app.get('/', (req, res) => res.sendFile(__dirname + '/public/index.html'));
