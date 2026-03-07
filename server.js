@@ -1,5 +1,6 @@
 const express = require('express');
 const session = require('express-session');
+const FileStore = require('session-file-store')(session);
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 require('dotenv').config();
@@ -27,9 +28,10 @@ app.use(express.urlencoded({ extended: true }));
 
 // Sessiya sozlamalari
 app.use(session({
+  store: new FileStore({ path: './sessions' }),
   secret: process.env.SESSION_SECRET || 'pdp_chat_secret',
   resave: false,
-  saveUninitialized: true,
+  saveUninitialized: false, // Changed to false for better session handling
   proxy: true,
   cookie: {
     secure: process.env.NODE_ENV === 'production',

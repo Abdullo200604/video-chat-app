@@ -58,7 +58,7 @@ const videoGrid = document.getElementById('videoGrid');
 // ── INIT ────────────────────────────────────────
 (async () => {
     document.getElementById('meetingCodeText').textContent = ROOM_ID;
-    startTimer();
+    // Initial timer will be updated by room-state
     await loadDevices();
 
     try {
@@ -94,14 +94,30 @@ myPeer.on('call', call => {
 socket.on('you-are-host', () => {
     isHost = true;
     document.querySelectorAll('.host-only').forEach(el => el.classList.remove('hidden'));
+    updateParticipantsUI();
+    // Update local tile for crown
+    if (tiles['me']) {
+        const nameEl = tiles['me'].querySelector('.tile-name');
+        if (nameEl && !nameEl.innerHTML.includes('👑')) nameEl.innerHTML += ' 👑';
+    }
     showToast('Siz bu majlisning mezboningizsiz 👑');
 });
 socket.on('new-host', peerId => {
-    if (peerId === myPeerId) {
-        isHost = true;
+    const wasHost = isHost;
+    isHost = peerId === myPeerId;
+    if (isHost) {
         document.querySelectorAll('.host-only').forEach(el => el.classList.remove('hidden'));
-        showToast('Siz yangi mezbon bo\'ldingiz 👑');
+        if (!wasHost) showToast('Siz yangi mezbon bo\'ldingiz 👑');
     }
+    updateParticipantsUI();
+    // Sync crowns on tiles
+    Object.entries(tiles).forEach(([uid, el]) => {
+        const nameEl = el.querySelector('.tile-name');
+        if (!nameEl) return;
+        const name = uid === 'me' ? myName : (participants[uid]?.name || 'Mehmon');
+        const roleStr = (uid === 'me' ? (isHost ? ' 👑' : '') : (uid === peerId ? ' 👑' : ''));
+        nameEl.innerHTML = `${name}${uid === 'me' ? ' (Siz)' : ''}${roleStr}`;
+    });
 });
 socket.on('room-state', state => {
     isHost = state.isHost;
@@ -145,6 +161,10 @@ socket.on('permissions-updated', perms => {
 socket.on('force-kick', uid => { if (uid === myPeerId) { showToast('Mezbon sizi chiqardi.'); setTimeout(leaveMeeting, 1500); } });
 socket.on('set-mic-state', ({ uid, on }) => { if (uid === myPeerId) { if (micOn !== on) toggleMic(); } });
 socket.on('set-cam-state', ({ uid, on }) => { if (uid === myPeerId) { if (camOn !== on) toggleCam(); } });
+socket.on('status-update', (data) => {
+    // If someone else updated their status (like videoOff), refresh their tile
+    updateParticipantsUI();
+});
 socket.on('user-raised-hand', (uid, name) => { showToast(`✋ ${name} qo'l ko'tardi`); markHandRaised(uid); });
 socket.on('show-reaction', ({ uid, name, emoji }) => showFloatingReaction(emoji, name));
 
@@ -166,10 +186,18 @@ function addTile(stream, peerId, name, isMe) {
 
     const info = document.createElement('div');
     info.className = 'tile-info';
-    info.innerHTML = `<div class="tile-name">${name}${isMe ? ' (Siz)' : ''}</div>`;
-    if (isMe && isHost) info.querySelector('.tile-name').innerHTML += ' 👑';
+    const isRoomHost = isMe ? isHost : (participants[peerId]?.isHost || false); // Note: server should ideally pass this in participants
+    // Simpler check for host crown on tile
+    const crown = (isMe && isHost) ? ' 👑' : '';
+    info.innerHTML = `<div class="tile-name">${name}${isMe ? ' (Siz)' : ''}${crown}</div>`;
+
+    const avatar = document.createElement('div');
+    avatar.className = 'tile-avatar';
+    avatar.style.background = `linear-gradient(135deg, #1a73e8, #0d47a1)`;
+    avatar.textContent = (name || 'M').charAt(0).toUpperCase();
 
     tile.appendChild(vid);
+    tile.appendChild(avatar);
     tile.appendChild(info);
 
     // Apply existing effect if any
@@ -179,6 +207,12 @@ function addTile(stream, peerId, name, isMe) {
     videoGrid.appendChild(tile);
     tiles[peerId] = tile;
     streams[peerId] = stream;
+
+    // Initial visibility check
+    const isVideoOff = isMe ? !camOn : !!participants[peerId]?.videoOff;
+    vid.classList.toggle('hidden', isVideoOff);
+    avatar.classList.toggle('hidden', !isVideoOff);
+
     updateGridCount();
     if (theaterActive) updateTheaterAvatars();
 }
@@ -377,7 +411,6 @@ function hostKick(uid) { socket.emit('host-kick-user', uid); }
 
 // ── PARTICIPANTS UI ───────────────────────────────
 function updateParticipantsUI() {
-    const colors = ['#1a73e8', '#34a853', '#ea4335', '#fbbc04', '#9c27b0', '#00bcd4'];
     const list = document.getElementById('participantsList');
     const hList = document.getElementById('hostParticipantsList');
     const badge = document.getElementById('participantCount');
@@ -388,9 +421,20 @@ function updateParticipantsUI() {
     if (hList) hList.innerHTML = '';
 
     entries.forEach(([uid, info], i) => {
-        const color = colors[i % colors.length];
         const initial = (info.name || 'M').charAt(0).toUpperCase();
         const isMe_ = uid === myPeerId;
+
+        // Sync tile visibility if video state changed
+        const tile = tiles[isMe_ ? 'me' : uid];
+        if (tile) {
+            const v = tile.querySelector('video');
+            const a = tile.querySelector('.tile-avatar');
+            if (v && a) {
+                const off = isMe_ ? !camOn : !!info.videoOff;
+                v.classList.toggle('hidden', off);
+                a.classList.toggle('hidden', !off);
+            }
+        }
 
         if (list) {
             const item = document.createElement('div');
