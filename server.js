@@ -191,13 +191,13 @@ io.on('connection', socket => {
     });
 
     // Host commands
-    socket.on('host-mute-user', (targetId) => {
+    socket.on('host-set-mic', ({ targetId, on }) => {
       if (!rooms[roomId] || rooms[roomId].host !== userId) return;
-      io.to(roomId).emit('force-mute', targetId);
+      io.to(roomId).emit('set-mic-state', { uid: targetId, on });
     });
-    socket.on('host-disable-camera', (targetId) => {
+    socket.on('host-set-cam', ({ targetId, on }) => {
       if (!rooms[roomId] || rooms[roomId].host !== userId) return;
-      io.to(roomId).emit('force-camera-off', targetId);
+      io.to(roomId).emit('set-cam-state', { uid: targetId, on });
     });
     socket.on('host-kick-user', (targetId) => {
       if (!rooms[roomId] || rooms[roomId].host !== userId) return;

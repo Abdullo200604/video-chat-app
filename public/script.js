@@ -97,6 +97,10 @@ socket.on('new-host', peerId => {
     }
 });
 socket.on('room-state', state => {
+    isHost = state.isHost;
+    if (isHost) {
+        document.querySelectorAll('.host-only').forEach(el => el.classList.remove('hidden'));
+    }
     chatEnabled = state.chatEnabled;
     participants = state.participants || {};
     Object.assign(permissions, state.permissions || {});
@@ -130,14 +134,9 @@ socket.on('permissions-updated', perms => {
     if (!permissions.participantMic && !isHost) forceMute();
     if (!permissions.participantCamera && !isHost) forceCamOff();
 });
-socket.on('chat-toggled', on => {
-    chatEnabled = on;
-    document.getElementById('chatDisabledMsg').classList.toggle('hidden', on);
-    document.getElementById('chatInputArea').style.display = on ? '' : 'none';
-});
-socket.on('force-mute', uid => { if (uid === myPeerId) forceMute(); });
-socket.on('force-camera-off', uid => { if (uid === myPeerId) forceCamOff(); });
 socket.on('force-kick', uid => { if (uid === myPeerId) { showToast('Mezbon sizi chiqardi.'); setTimeout(leaveMeeting, 1500); } });
+socket.on('set-mic-state', ({ uid, on }) => { if (uid === myPeerId) { if (micOn !== on) toggleMic(); } });
+socket.on('set-cam-state', ({ uid, on }) => { if (uid === myPeerId) { if (camOn !== on) toggleCam(); } });
 socket.on('user-raised-hand', (uid, name) => { showToast(`✋ ${name} qo'l ko'tardi`); markHandRaised(uid); });
 socket.on('show-reaction', ({ uid, name, emoji }) => showFloatingReaction(emoji, name));
 
@@ -358,8 +357,14 @@ function updateSetting(key, val) { socket.emit('update-permissions', { [key]: va
 function updatePerm(key, val) { socket.emit('update-permissions', { [key]: val }); }
 function toggleChatForAll(on) { socket.emit('toggle-chat', on); }
 
-function hostMute(uid) { socket.emit('host-mute-user', uid); }
-function hostDisableCam(uid) { socket.emit('host-disable-camera', uid); }
+function hostMute(uid) {
+    const isMuted = participants[uid]?.muted;
+    socket.emit('host-set-mic', { targetId: uid, on: !!isMuted }); // Switch to opposite
+}
+function hostDisableCam(uid) {
+    const isOff = participants[uid]?.videoOff;
+    socket.emit('host-set-cam', { targetId: uid, on: !!isOff }); // Switch to opposite
+}
 function hostKick(uid) { socket.emit('host-kick-user', uid); }
 
 // ── PARTICIPANTS UI ───────────────────────────────
@@ -399,9 +404,15 @@ function updateParticipantsUI() {
                 <div class="p-avatar" style="background:${color};width:28px;height:28px;font-size:12px;">${initial}</div>
                 <div class="p-name" style="font-size:13px;">${info.name}</div>
                 <div class="host-p-actions">
-                    <button class="host-action-btn" onclick="hostMute('${uid}')" title="Jim qilish"><i class="fas fa-microphone-slash"></i></button>
-                    <button class="host-action-btn" onclick="hostDisableCam('${uid}')" title="Kamerani o'chirish"><i class="fas fa-video-slash"></i></button>
-                    <button class="host-action-btn danger" onclick="hostKick('${uid}')" title="Chiqarish"><i class="fas fa-user-times"></i></button>
+                    <button class="host-action-btn ${info.muted ? 'off' : ''}" onclick="hostMute('${uid}')" title="${info.muted ? 'Ovozini yoqish' : 'Ovozini o\'chirish'}">
+                        <i class="fas ${info.muted ? 'fa-microphone-slash' : 'fa-microphone'}"></i>
+                    </button>
+                    <button class="host-action-btn ${info.videoOff ? 'off' : ''}" onclick="hostDisableCam('${uid}')" title="${info.videoOff ? 'Kamerasini yoqish' : 'Kamerasini o\'chirish'}">
+                        <i class="fas ${info.videoOff ? 'fa-video-slash' : 'fa-video'}"></i>
+                    </button>
+                    <button class="host-action-btn danger" onclick="hostKick('${uid}')" title="Chiqarish">
+                        <i class="fas fa-user-times"></i>
+                    </button>
                 </div>`;
             hList.appendChild(item);
         }
