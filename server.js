@@ -12,7 +12,7 @@ const { v4: uuidV4 } = require('uuid');
 const crypto = require('crypto');
 
 function generateShortId() {
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   const part = () => Array.from({ length: 3 }, () => chars[crypto.randomInt(chars.length)]).join('');
   return `${part()}-${part()}-${part()}`;
 }
