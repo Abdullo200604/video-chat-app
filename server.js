@@ -269,7 +269,7 @@ io.on('connection', socket => {
         io.to(roomId).emit('new-host', next);
       }
       io.to(roomId).emit('user-disconnected', userId);
-      if (rooms[roomId]) io.to(roomId).emit('participants-update', rooms[roomId].participants);
+      io.to(roomId).emit('participants-update', rooms[roomId].participants);
     });
   });
 });

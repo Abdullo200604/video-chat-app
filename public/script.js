@@ -407,6 +407,7 @@ function updateParticipantsUI() {
     const list = document.getElementById('participantsList');
     const hList = document.getElementById('hostParticipantsList');
     const badge = document.getElementById('participantCount');
+    const colors = ['#1a73e8', '#34a853', '#ea4335', '#fbbc04', '#15c1d7', '#8d16f8'];
 
     const entries = Object.entries(participants);
     if (badge) badge.textContent = entries.length;
@@ -414,6 +415,7 @@ function updateParticipantsUI() {
     if (hList) hList.innerHTML = '';
 
     entries.forEach(([uid, info], i) => {
+        const color = colors[i % colors.length];
         const initial = (info.name || 'M').charAt(0).toUpperCase();
         const isMe_ = uid === myPeerId;
 
