@@ -24,13 +24,21 @@
                 <span class="logo-text">PDP <strong>Chat</strong></span>
             </a>
             <div class="meeting-timer" id="meetingTimer">00:00</div>
+            <div class="rec-indicator hidden" id="recIndicator">
+                <span class="rec-dot"></span> REC
+            </div>
         </div>
-        <div class="meeting-code">
-            <span id="meetingCodeText"></span>
-            <button class="icon-btn" onclick="copyMeetingLink()" title="Havolani nusxalash">
-                <i class="fas fa-copy"></i>
-            </button>
-        </div>
+        <div class="header-right-group">
+            <div class="conn-quality" id="connQuality" title="Ulanish sifati">
+                <i class="fas fa-signal"></i>
+                <span id="connQualityText">Yaxshi</span>
+            </div>
+            <div class="meeting-code">
+                <span id="meetingCodeText"></span>
+                <button class="icon-btn" onclick="copyMeetingLink()" title="Havolani nusxalash">
+                    <i class="fas fa-copy"></i>
+                </button>
+            </div>
         </div>
     </header>
 
@@ -59,6 +67,14 @@
             </button>
         </div>
         <div class="ctrl-group">
+            <button class="ctrl-btn" id="recordBtn" onclick="toggleRecording()" title="Yozib olish">
+                <i class="fas fa-record-vinyl"></i>
+                <span>Yozish</span>
+            </button>
+            <button class="ctrl-btn" id="blurBtn" onclick="toggleVirtualBlur()" title="Fon Blur">
+                <i class="fas fa-user-shield"></i>
+                <span>Fon Blur</span>
+            </button>
             <button class="ctrl-btn" id="effectsBtn" onclick="togglePanel('effects')" title="Effektlar">
                 <i class="fas fa-magic"></i>
                 <span>Effektlar</span>

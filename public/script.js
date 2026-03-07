@@ -692,3 +692,166 @@ document.addEventListener('click', e => {
         menu.classList.add('hidden');
     }
 });
+
+// ══════════════════════════════════════════════════
+// ── MEETING RECORDING (MediaRecorder API) ─────────
+// ══════════════════════════════════════════════════
+let mediaRecorder = null;
+let recordedChunks = [];
+let recordingOn = false;
+
+function toggleRecording() {
+    if (recordingOn) stopRecording();
+    else startRecording();
+}
+
+function startRecording() {
+    if (!myStream) { showToast('Kamera/mikrofon yo\'q, yozib bo\'lmaydi.'); return; }
+
+    // Combine all streams into one canvas if possible, else record myStream
+    const tracks = [...myStream.getTracks()];
+    const combinedStream = new MediaStream(tracks);
+
+    const options = { mimeType: 'video/webm;codecs=vp9,opus' };
+    try {
+        mediaRecorder = new MediaRecorder(combinedStream, options);
+    } catch {
+        mediaRecorder = new MediaRecorder(combinedStream);
+    }
+
+    recordedChunks = [];
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+    mediaRecorder.onstop = downloadRecording;
+    mediaRecorder.start(1000);
+
+    recordingOn = true;
+    document.getElementById('recIndicator').classList.remove('hidden');
+    document.getElementById('recordBtn').classList.add('off-state');
+    document.getElementById('recordBtn').querySelector('span').textContent = 'To\'xtat';
+    showToast('🔴 Yozib olish boshlandi!');
+}
+
+function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+    recordingOn = false;
+    document.getElementById('recIndicator').classList.add('hidden');
+    document.getElementById('recordBtn').classList.remove('off-state');
+    document.getElementById('recordBtn').querySelector('span').textContent = 'Yozish';
+    showToast('⏹ Yozib olish tugadi. Fayl yuklanmoqda...');
+}
+
+function downloadRecording() {
+    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pdpchat-recording-${ROOM_ID}-${Date.now()}.webm`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+// ══════════════════════════════════════════════════
+// ── VIRTUAL BLUR (Canvas-based) ───────────────────
+// ══════════════════════════════════════════════════
+let blurOn = false;
+
+function toggleVirtualBlur() {
+    blurOn = !blurOn;
+    const myTile = tiles['me'];
+    if (myTile) {
+        myTile.classList.toggle('virtual-blur-active', blurOn);
+    }
+    document.getElementById('blurBtn').classList.toggle('active-panel', blurOn);
+    showToast(blurOn ? '🌫️ Fon blur yoqildi' : 'Fon blur o\'chirildi');
+}
+
+// ══════════════════════════════════════════════════
+// ── ACTIVE SPEAKER DETECTION (Web Audio API) ──────
+// ══════════════════════════════════════════════════
+let audioCtx = null;
+let speakerDetectorInterval = null;
+const analyserMap = {}; // peerId -> { analyser, buffer }
+
+function initSpeakerDetection(stream, peerId) {
+    if (!stream || !stream.getAudioTracks().length) return;
+    try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const source = audioCtx.createMediaStreamSource(stream);
+        const analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 512;
+        source.connect(analyser);
+        analyserMap[peerId] = { analyser, buffer: new Uint8Array(analyser.frequencyBinCount) };
+    } catch (e) { /* AudioContext might be blocked */ }
+}
+
+function getVolume(peerId) {
+    const item = analyserMap[peerId];
+    if (!item) return 0;
+    item.analyser.getByteFrequencyData(item.buffer);
+    const avg = item.buffer.reduce((a, b) => a + b, 0) / item.buffer.length;
+    return avg;
+}
+
+// Start detection loop
+speakerDetectorInterval = setInterval(() => {
+    let maxVol = 8; // threshold
+    let activeSpeaker = null;
+    Object.keys(analyserMap).forEach(pid => {
+        const vol = getVolume(pid);
+        if (vol > maxVol) { maxVol = vol; activeSpeaker = pid; }
+    });
+    Object.keys(tiles).forEach(pid => {
+        tiles[pid]?.classList.toggle('speaking', pid === activeSpeaker);
+    });
+}, 300);
+
+// Hook into stream additions
+const _origAddTile = addTile;
+// We'll attach audio analysis after addTile is called
+socket.on('user-connected', (uid) => {
+    // Attach analyser after a short delay (stream may not be ready immediately)
+    setTimeout(() => {
+        const s = streams[uid];
+        if (s) initSpeakerDetection(s, uid);
+    }, 2000);
+});
+
+// Init for self
+setTimeout(() => { if (myStream) initSpeakerDetection(myStream, 'me'); }, 1000);
+
+// ══════════════════════════════════════════════════
+// ── CONNECTION QUALITY MONITOR ────────────────────
+// ══════════════════════════════════════════════════
+setInterval(async () => {
+    const el = document.getElementById('connQuality');
+    const txt = document.getElementById('connQualityText');
+    if (!el || !txt) return;
+
+    // Check RTT from one of the peer connections
+    const calls = Object.values(peers);
+    if (!calls.length) return;
+
+    try {
+        const stats = await calls[0].peerConnection?.getStats();
+        let rtt = null;
+        stats?.forEach(report => {
+            if (report.type === 'candidate-pair' && report.state === 'succeeded' && report.currentRoundTripTime) {
+                rtt = report.currentRoundTripTime * 1000; // ms
+            }
+        });
+
+        if (rtt === null) return;
+
+        el.className = 'conn-quality';
+        if (rtt < 100) {
+            txt.textContent = 'Yaxshi';
+            el.classList.add('good');
+        } else if (rtt < 300) {
+            txt.textContent = 'O\'rtacha';
+            el.classList.add('fair');
+        } else {
+            txt.textContent = 'Sust';
+            el.classList.add('poor');
+        }
+    } catch (e) { /* ignore */ }
+}, 5000);

@@ -89,6 +89,86 @@ body.meeting-body {
     color: var(--muted);
 }
 
+.header-right-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* ── Recording indicator ── */
+.rec-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(234, 67, 53, .18);
+    color: #ea4335;
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.rec-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #ea4335;
+    animation: recBlink 1.2s ease infinite;
+}
+
+@keyframes recBlink {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0;
+    }
+}
+
+/* ── Connection quality ── */
+.conn-quality {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--surface);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 11px;
+    color: var(--green);
+    cursor: default;
+}
+
+.conn-quality.poor {
+    color: var(--red);
+}
+
+.conn-quality.fair {
+    color: var(--yellow);
+}
+
+/* ── Virtual blur overlay ── */
+.virtual-blur-active .tile-video {
+    filter: blur(12px) !important;
+}
+
+.icon-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 3px 5px;
+    border-radius: 4px;
+    font-size: 13px;
+    transition: color .2s;
+}
+
+.icon-btn:hover {
+    color: white;
+}
+
 /* ════ VIDEO AREA ════ */
 .video-area {
     flex: 1;
