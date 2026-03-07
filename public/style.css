@@ -12,18 +12,22 @@ body {
     height: 100vh;
 }
 
+/* ═══ ANA KONTEYNER ═══ */
 .main-container {
     display: flex;
     height: 100vh;
     flex-direction: row;
+    position: relative;
+    overflow: hidden;
 }
 
-/* ── LEFT: Video area ── */
+/* ═══ CHAP QISM (Video) ═══ */
 .main-left {
     flex: 1;
     display: flex;
     flex-direction: column;
     min-width: 0;
+    transition: margin-right 0.3s ease;
 }
 
 .main-videos {
@@ -50,24 +54,26 @@ video {
     width: 300px;
     height: 200px;
     object-fit: cover;
-    border-radius: 8px;
+    border-radius: 10px;
     background-color: #3C4043;
     transform: scaleX(-1);
 }
 
-/* ── Controls ── */
+/* ═══ BOSHQARUV TUGMALARI ═══ */
 .main-controls {
     background-color: #202124;
-    padding: 10px;
+    padding: 10px 14px;
     display: flex;
     justify-content: center;
-    gap: 12px;
+    align-items: center;
+    gap: 10px;
     flex-wrap: wrap;
+    border-top: 1px solid #3C4043;
 }
 
 .main-controls-block {
     display: flex;
-    gap: 10px;
+    gap: 8px;
 }
 
 .main-controls-button {
@@ -77,17 +83,21 @@ video {
     align-items: center;
     padding: 10px 14px;
     cursor: pointer;
-    border-radius: 8px;
-    transition: all 0.3s ease;
+    border-radius: 10px;
+    transition: background-color 0.2s ease, transform 0.1s ease;
     background-color: #3C4043;
-    min-width: 70px;
+    min-width: 68px;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
+    position: relative;
 }
 
-.main-controls-button:hover,
 .main-controls-button:active {
-    background-color: #5f6368;
+    transform: scale(0.94);
+}
+
+.main-controls-button:hover {
+    background-color: #4f5356;
 }
 
 .main-controls-button i {
@@ -96,7 +106,33 @@ video {
 }
 
 .main-controls-button span {
-    font-size: 12px;
+    font-size: 11px;
+    line-height: 1;
+}
+
+.main-controls-button.active-panel {
+    background-color: #1a73e8;
+}
+
+/* Xabar badge */
+.badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: #ea4335;
+    color: white;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    font-size: 10px;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+}
+
+.badge.show {
+    display: flex;
 }
 
 .unmute,
@@ -111,57 +147,105 @@ video {
     padding: 10px 18px;
 }
 
-.leave-meeting:hover,
-.leave-meeting:active {
+.leave-meeting:hover {
     background-color: #d93025;
 }
 
 .leave-text {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
 }
 
-/* ── RIGHT: Chat area ── */
-.main-right {
-    width: 280px;
+/* ═══ YON PANELLAR (Chat va Effektlar) ═══ */
+.side-panel {
+    width: 300px;
+    height: 100vh;
     background-color: #ffffff;
-    border-left: 1px solid #e0e0e0;
     display: flex;
     flex-direction: column;
     color: #3C4043;
+    transform: translateX(100%);
+    position: absolute;
+    right: 0;
+    top: 0;
+    z-index: 100;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.4);
 }
 
-.main-header {
-    padding: 14px;
-    color: #202124;
-    text-align: center;
-    border-bottom: 1px solid #e0e0e0;
+.side-panel.open {
+    transform: translateX(0);
+}
+
+.panel-header {
+    padding: 14px 16px;
+    background-color: #202124;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     font-weight: 500;
+    font-size: 15px;
+    border-bottom: 1px solid #3C4043;
 }
 
+.close-panel-btn {
+    background: none;
+    border: none;
+    color: #aaa;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: color 0.2s, background 0.2s;
+}
+
+.close-panel-btn:hover {
+    color: white;
+    background-color: #3C4043;
+}
+
+/* ═══ CHAT PANELI ═══ */
 .main-chat-window {
     flex-grow: 1;
     overflow-y: auto;
-    padding: 10px;
+    padding: 12px;
     background-color: #f1f3f4;
 }
 
 .messages {
     list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .messages li {
     padding: 8px 12px;
-    margin-bottom: 8px;
     background-color: #e8eaed;
-    border-radius: 8px;
+    border-radius: 10px;
     font-size: 13px;
     word-break: break-word;
+    line-height: 1.5;
+    animation: msgIn 0.2s ease;
+}
+
+@keyframes msgIn {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .main-message-container {
     padding: 12px;
     border-top: 1px solid #e0e0e0;
+    background: white;
 }
 
 #chat_message {
@@ -177,9 +261,99 @@ video {
     border-color: #1a73e8;
 }
 
-/* ══════════════════════════════
-   MOBILE RESPONSIVE (max 768px)
-══════════════════════════════ */
+/* ═══ EFFEKTLAR PANELI ═══ */
+.effects-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 16px;
+    overflow-y: auto;
+    background-color: #f1f3f4;
+    flex-grow: 1;
+}
+
+.effect-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    border-radius: 12px;
+    padding: 12px 8px;
+    background: white;
+    border: 2px solid transparent;
+    transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+    user-select: none;
+}
+
+.effect-card:hover {
+    border-color: #1a73e8;
+    box-shadow: 0 2px 8px rgba(26, 115, 232, 0.2);
+    transform: translateY(-2px);
+}
+
+.effect-card.active {
+    border-color: #1a73e8;
+    background-color: #e8f0fe;
+}
+
+.effect-card:active {
+    transform: scale(0.96);
+}
+
+.effect-card span {
+    font-size: 12px;
+    color: #3C4043;
+    text-align: center;
+    font-weight: 500;
+}
+
+.effect-preview {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+}
+
+/* Effect preview styles */
+.effect-none-preview {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
+
+.effect-blur-preview {
+    background: linear-gradient(135deg, #89f7fe, #66a6ff);
+    color: white;
+    filter: blur(1px);
+}
+
+.effect-grayscale-preview {
+    background: linear-gradient(135deg, #bdc3c7, #2c3e50);
+    color: white;
+}
+
+.effect-sepia-preview {
+    background: linear-gradient(135deg, #d4a574, #8b6914);
+    color: white;
+}
+
+.effect-invert-preview {
+    background: linear-gradient(135deg, #43e97b, #38f9d7);
+    color: black;
+    filter: invert(1);
+}
+
+.effect-warm-preview {
+    background: linear-gradient(135deg, #f6d365, #fda085);
+    color: white;
+}
+
+/* ═══════════════════════════════════
+   MOBIL (max-width: 768px)
+═══════════════════════════════════ */
 @media (max-width: 768px) {
     body {
         overflow: auto;
@@ -194,15 +368,22 @@ video {
 
     .main-left {
         flex: none;
-        height: 60vh;
+        height: 100vh;
     }
 
-    .main-videos {
-        padding: 6px;
+    /* Panellar pastdan chiqadi */
+    .side-panel {
+        width: 100%;
+        height: 70vh;
+        top: auto;
+        bottom: 0;
+        right: 0;
+        transform: translateY(100%);
+        border-radius: 16px 16px 0 0;
     }
 
-    #video-grid {
-        gap: 5px;
+    .side-panel.open {
+        transform: translateY(0);
     }
 
     video {
@@ -210,41 +391,32 @@ video {
         height: auto;
         aspect-ratio: 4/3;
         max-width: 100%;
-        border-radius: 6px;
+        border-radius: 8px;
     }
 
-    /* If only one video, make it full width */
     #video-grid video:only-child {
         width: 100%;
     }
 
     .main-controls {
-        padding: 8px 6px;
-        gap: 8px;
+        gap: 6px;
+        padding: 8px 10px;
     }
 
     .main-controls-button {
-        min-width: 60px;
+        min-width: 56px;
         padding: 8px 10px;
     }
 
     .main-controls-button i {
-        font-size: 18px;
+        font-size: 17px;
     }
 
     .main-controls-button span {
         font-size: 10px;
     }
 
-    .main-right {
-        width: 100%;
-        border-left: none;
-        border-top: 1px solid #e0e0e0;
-        height: 40vh;
-    }
-
-    .main-chat-window {
-        flex-grow: 1;
-        overflow-y: auto;
+    .effects-grid {
+        grid-template-columns: 1fr 1fr 1fr;
     }
 }
