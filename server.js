@@ -5,6 +5,9 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 require('dotenv').config();
 
+const adminAuth = require('./server/middleware/adminAuth');
+const adminRoutes = require('./server/routes/adminRoutes');
+
 const app = express();
 app.set('trust proxy', 1); // For Render.com HTTPS
 const server = require('http').Server(app);
@@ -152,55 +155,12 @@ app.get('/:room', (req, res) => {
   res.redirect(`/lobby/${roomId}`);
 });
 
-// ── Admin Dashboard ──────────────────────────────
-const ADMIN_SECRET = process.env.ADMIN_SECRET || 'pdpadmin';
+// ── Admin Route Integration ────────────────────────
+const bannedUsers = [];
+app.use('/api/admin', adminAuth, adminRoutes(rooms, scheduledMeetings, bannedUsers, io));
 
-app.get('/admin', (req, res) => {
-  const token = req.query.token || req.headers['x-admin-token'];
-  if (token !== ADMIN_SECRET) return res.status(401).json({ error: 'Unauthorized' });
-
-  const summary = Object.entries(rooms).map(([id, r]) => ({
-    id,
-    host: r.host,
-    participants: Object.keys(r.participants).length,
-    startTime: r.startTime,
-    elapsedMin: Math.floor((Date.now() - r.startTime) / 60000),
-    chatEnabled: r.chatEnabled,
-    accessType: r.accessType
-  }));
-  res.json({ rooms: summary, totalRooms: summary.length, totalUsers: summary.reduce((a, r) => a + r.participants, 0) });
-});
-
-// ── Meeting Scheduler ────────────────────────────
-const scheduledMeetings = []; // { id, title, date, createdBy, link }
-
-app.post('/api/schedule', (req, res) => {
-  const { title, date } = req.body;
-  if (!title || !date) return res.status(400).json({ error: 'title and date required' });
-  const roomId = generateShortId();
-  const meeting = { id: roomId, title, date, createdBy: req.user?.name || 'Anonymous', link: `/lobby/${roomId}`, createdAt: Date.now() };
-  scheduledMeetings.push(meeting);
-  rooms[roomId] = {
-    host: null, accessType: 'open', theaterMode: false, chatEnabled: true,
-    startTime: new Date(date).getTime(),
-    permissions: { screenShare: true, reactions: true, participantMic: true, participantCamera: true },
-    waitingRoom: [], participants: {}
-  };
-  res.json(meeting);
-});
-
-app.get('/api/schedule', (req, res) => {
-  const upcoming = scheduledMeetings
-    .filter(m => new Date(m.date) > new Date() || Date.now() - new Date(m.date) < 60 * 60 * 1000)
-    .sort((a, b) => new Date(a.date) - new Date(b.date));
-  res.json(upcoming);
-});
-
-app.delete('/api/schedule/:id', (req, res) => {
-  const idx = scheduledMeetings.findIndex(m => m.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ error: 'Not found' });
-  scheduledMeetings.splice(idx, 1);
-  res.json({ ok: true });
+app.get('/admin', adminAuth, (req, res) => {
+  res.sendFile(__dirname + '/public/admin/dashboard.html');
 });
 
 // ── Socket.io ───────────────────────────────
@@ -210,6 +170,11 @@ io.on('connection', socket => {
   let currentName = 'Mehmon';
 
   socket.on('join-room', (roomId, userId, name, initialStatus = {}) => {
+    if (bannedUsers.includes(userId)) {
+      socket.emit('force-kick', 'You are banned from this server.');
+      return;
+    }
+
     currentRoomId = roomId;
     currentUserId = userId;
     if (!rooms[roomId]) {

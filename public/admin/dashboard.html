@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDP Chat - Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/admin/css/admin.css">
+</head>
+
+<body>
+
+    <div class="sidebar">
+        <div class="brand">
+            <img src="/logo.png" alt="Logo" class="brand-logo">
+            <h2>PDP Chat</h2>
+        </div>
+        <ul class="nav-links">
+            <li class="active" onclick="showTab('dashboard')"><i class="fas fa-chart-pie"></i> Dashboard</li>
+            <li onclick="showTab('users')"><i class="fas fa-users"></i> Foydalanuvchilar</li>
+            <li onclick="showTab('meetings')"><i class="fas fa-video"></i> Majlislar</li>
+            <li onclick="showTab('settings')"><i class="fas fa-cog"></i> Sozlamalar</li>
+            <li onclick="showTab('logs')"><i class="fas fa-list-alt"></i> Tizim Jurnali (Logs)</li>
+            <li class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Chiqish</li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <header>
+            <h1 id="pageTitle">Ko'rsatkichlar (Dashboard)</h1>
+            <div class="admin-auth" id="authSection">
+                <input type="password" id="adminToken" placeholder="Admin tokeni (maxfiy so'z)...">
+                <button onclick="saveToken()">Saqlash</button>
+            </div>
+        </header>
+
+        <!-- Dashboard Tab -->
+        <section id="dashboard" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-users"></i></div>
+                    <div class="stat-info">
+                        <h3>Jami Foydalanuvchilar</h3>
+                        <p id="dashTotalUsers">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-video"></i></div>
+                    <div class="stat-info">
+                        <h3>Aktiv Majlislar</h3>
+                        <p id="dashActiveMeetings">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-wifi"></i></div>
+                    <div class="stat-info">
+                        <h3>Hozir Tarmoqda</h3>
+                        <p id="dashOnlineUsers">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-container">
+                <h2>So'nggi Majlislar</h2>
+                <div class="table-wrapper">
+                    <table id="dashMeetingsTable">
+                        <thead>
+                            <tr>
+                                <th>Room ID</th>
+                                <th>Mezbon</th>
+                                <th>Ishtirokchilar</th>
+                                <th>Vaqt</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Users Tab -->
+        <section id="users" class="tab-content">
+            <div class="section-container">
+                <div class="flex-bw">
+                    <h2>Foydalanuvchilarni Boshqarish</h2>
+                    <input type="text" id="userSearch" class="search-box" placeholder="Qidiruv...">
+                </div>
+                <div class="table-wrapper">
+                    <table id="usersTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Ism</th>
+                                <th>Xona (Room ID)</th>
+                                <th>Holat</th>
+                                <th>Harakatlar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Meetings Tab -->
+        <section id="meetings" class="tab-content">
+            <div class="section-container">
+                <h2>Aktiv Majlislar</h2>
+                <div class="table-wrapper">
+                    <table id="meetingsTable">
+                        <thead>
+                            <tr>
+                                <th>Room ID</th>
+                                <th>Mezbon</th>
+                                <th>Tarkib</th>
+                                <th>Davomiylik</th>
+                                <th>Harakatlar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Settings Tab -->
+        <section id="settings" class="tab-content">
+            <div class="section-container">
+                <h2>Tizim Sozlamalari (Demo)</h2>
+                <div class="settings-form">
+                    <div class="form-group">
+                        <label>Bir xonadagi odamlar chegarasi:</label>
+                        <input type="number" value="20" class="input-field">
+                    </div>
+                    <div class="form-group">
+                        <label>Umumiy chat ruxsati:</label>
+                        <select class="input-field">
+                            <option>Yoqilgan</option>
+                            <option>O'chirilgan</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Ekran ulashish:</label>
+                        <select class="input-field">
+                            <option>Yoqilgan</option>
+                            <option>O'chirilgan</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="alert('Saqlandi!')">Saqlash</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Logs Tab -->
+        <section id="logs" class="tab-content">
+            <div class="section-container">
+                <h2>Tizim Jurnali</h2>
+                <div class="logs-container" id="logsContainer">
+                    <!-- Logs -->
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        let token = localStorage.getItem('adminToken') || '';
+        if (token) document.getElementById('adminToken').value = token;
+
+        function saveToken() {
+            token = document.getElementById('adminToken').value;
+            localStorage.setItem('adminToken', token);
+            fetchData();
+        }
+
+        const api = axios.create({ baseURL: '/api/admin' });
+        api.interceptors.request.use(config => {
+            config.headers['x-admin-token'] = token;
+            return config;
+        });
+
+        // UI Tabs
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-links li').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.currentTarget.classList.add('active');
+
+            const titles = { dashboard: "Ko'rsatkichlar", users: 'Foydalanuvchilar', meetings: 'Majlislar', settings: 'Sozlamalar', logs: 'Jurnal' };
+            document.getElementById('pageTitle').textContent = titles[tabId];
+
+            if (token) fetchData();
+        }
+
+        function logout() {
+            localStorage.removeItem('adminToken');
+            window.location.href = '/';
+        }
+
+        // Data Fetching
+        async function fetchData() {
+            if (!token) return;
+            try {
+                // Dashboard
+                const dash = await api.get('/dashboard');
+                document.getElementById('dashTotalUsers').textContent = dash.data.totalUsers;
+                document.getElementById('dashActiveMeetings').textContent = dash.data.activeMeetings;
+                document.getElementById('dashOnlineUsers').textContent = dash.data.onlineUsers;
+
+                // Meetings
+                const meets = await api.get('/meetings');
+                renderMeetings(meets.data, 'dashMeetingsTable', true);
+                renderMeetings(meets.data, 'meetingsTable', false);
+
+                // Users
+                const users = await api.get('/users');
+                renderUsers(users.data);
+
+                // Logs
+                const logs = await api.get('/logs');
+                renderLogs(logs.data);
+
+            } catch (error) {
+                if (error.response?.status === 401 || error.response?.status === 403) {
+                    alert("Token noto'g'ri yoki sizda ruxsat yo'q!");
+                }
+            }
+        }
+
+        function renderMeetings(meetings, tableId, isDash) {
+            const tbody = document.querySelector(`#${tableId} tbody`);
+            tbody.innerHTML = '';
+            meetings.forEach(m => {
+                const tr = document.createElement('tr');
+                let html = `<td>${m.id}</td><td>${m.hostName}</td><td>${m.usersCount}</td><td>${m.duration}</td>`;
+                if (!isDash) {
+                    html += `<td>
+                        <button class="btn btn-danger btn-sm" onclick="endMeeting('${m.id}')">Tugatish</button>
+                    </td>`;
+                }
+                tr.innerHTML = html;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderUsers(users) {
+            const tbody = document.querySelector('#usersTable tbody');
+            tbody.innerHTML = '';
+            users.forEach(u => {
+                const tr = document.createElement('tr');
+                const isBanned = u.status === 'Banned';
+                const badgeClass = isBanned ? 'badge-danger' : 'badge-success';
+                let html = `<td>${u.id.substring(0, 8)}...</td><td>${u.name}</td><td>${u.roomId}</td>
+                            <td><span class="badge ${badgeClass}">${u.status}</span></td>
+                            <td>`;
+                if (isBanned) {
+                    html += `<button class="btn btn-primary btn-sm" onclick="unbanUser('${u.id}')">Bandan olish</button>`;
+                } else {
+                    html += `<button class="btn btn-danger btn-sm" onclick="banUser('${u.id}')">Ban qilish (Chiqarish)</button>`;
+                }
+                html += `</td>`;
+                tr.innerHTML = html;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderLogs(logs) {
+            const cont = document.getElementById('logsContainer');
+            cont.innerHTML = logs.map(l => `<div class="log-item"><span class="log-time">[${l.time}]</span> ${l.msg}</div>`).join('');
+        }
+
+        // Actions
+        async function endMeeting(id) {
+            if (!confirm('Ushbu majlisni majburan yopmoqchimisiz?')) return;
+            try { await api.post('/end-meeting', { roomId: id }); fetchData(); } catch (e) { console.error(e); }
+        }
+        async function banUser(id) {
+            if (!confirm("Foydalanuvchini ban qilib chiqarib yubormoqchimisiz?")) return;
+            try { await api.post('/ban-user', { userId: id }); fetchData(); } catch (e) { console.error(e); }
+        }
+        async function unbanUser(id) {
+            try { await api.post('/unban-user', { userId: id }); fetchData(); } catch (e) { console.error(e); }
+        }
+
+        // 10 soniyada bir marta yangilash
+        setInterval(fetchData, 10000);
+        setTimeout(fetchData, 500);
+
+    </script>
+</body>
+
+</html>
