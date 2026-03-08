@@ -190,7 +190,7 @@ const bannedUsers = [];
 const adminRouter = adminRoutes(rooms, scheduledMeetings, bannedUsers, io);
 app.use('/api/admin', adminAuth, adminRouter);
 
-app.get('/admin', adminAuth, (req, res) => {
+app.get('/admin', (req, res) => {
   res.sendFile(__dirname + '/public/admin/dashboard.html');
 });
 

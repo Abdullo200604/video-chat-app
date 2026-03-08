@@ -20,10 +20,12 @@ module.exports = function (rooms, scheduledMeetings, bannedUsers, io) {
             }
         } catch (e) { }
 
+        const globalConnections = io.engine ? io.engine.clientsCount : totalOnlineUsers;
+
         const data = {
             totalUsers: registeredUsers > 0 ? registeredUsers : (totalOnlineUsers + bannedUsers.length),
             activeMeetings: activeRooms,
-            onlineUsers: totalOnlineUsers,
+            onlineUsers: globalConnections,
             totalScheduled: scheduledMeetings.length
         };
         console.log('[Admin Dashboard Requested] Stats:', data);
