@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="/lobby.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="/socket.io/socket.io.js"></script>
 </head>
 
 <body>
@@ -87,6 +88,16 @@
         </div>
 
     </main>
+
+    <!-- Waiting Overlay -->
+    <div class="lobby-waiting-overlay hidden" id="waitingOverlay">
+        <div class="waiting-card">
+            <div class="waiting-spinner"></div>
+            <h3>Iltimos, kuting...</h3>
+            <p>Mezbon sizni qabul qilishini kutilmoqda.</p>
+            <button class="btn-cancel-knock" onclick="cancelKnock()">Bekor qilish</button>
+        </div>
+    </div>
 
     <script>
         const ROOM_ID = window.location.pathname.split('/').pop();
@@ -188,39 +199,106 @@
             document.getElementById('avatarInitial').textContent = initial;
         });
 
-        // ── Join ────────────────────────────────────
-        function joinMeeting() {
+        // ── Socket & Security ──────────────────────
+        const socket = io();
+        let isKnocking = false;
+
+        socket.on('waiting-approval', () => {
+            isKnocking = true;
+            document.getElementById('waitingOverlay').classList.remove('hidden');
+        });
+
+        socket.on('join-approved', () => {
             const name = document.getElementById('nameInput').value.trim();
-            if (name.length < 2) return;
-            // Pass name and device states via sessionStorage
             sessionStorage.setItem('pdp_name', name);
             sessionStorage.setItem('pdp_mic', micEnabled);
             sessionStorage.setItem('pdp_cam', camEnabled);
             sessionStorage.setItem('pdp_cam_id', currCamId || '');
             sessionStorage.setItem('pdp_mic_id', currMicId || '');
             window.location.href = '/meeting/' + ROOM_ID;
-        }
-
-        document.getElementById('nameInput').addEventListener('keydown', e => {
-            if (e.key === 'Enter') joinMeeting();
         });
 
-        // ── Auth Check ──────────────────────────────
-        async function checkAuth() {
-            const res = await fetch('/api/user');
-            const user = await res.json();
-            if (user && user.name) {
-                const input = document.getElementById('nameInput');
-                input.value = user.name;
-                // Trigger input event to update UI (avatar and join button)
-                input.dispatchEvent(new Event('input'));
-            }
-        }
+        socket.on('join-denied', () => {
+            isKnocking = false;
+            document.getElementById('waitingOverlay').classList.add('hidden');
+            alert('Mezbon kirishingizni rad etdi.');
+        });
+
+        socket.on('force-kick', (msg) => {
+            alert(msg || 'Kirish imkonsiz.');
+            window.location.href = '/';
+        });
 
         // ── Boot ────────────────────────────────────
         initMedia();
         checkAuth();
+
+        // Overwrite joinMeeting for Knocking support
+        function joinMeeting() {
+            const name = document.getElementById('nameInput').value.trim();
+            if (name.length < 2) return;
+
+            // Emit join request
+            socket.emit('join-room', ROOM_ID, 'lobby-' + Math.random().toString(36).substr(2, 9), name);
+        }
+
+        function cancelKnock() {
+            window.location.reload();
+        }
     </script>
+    <style>
+        .lobby-waiting-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(8px);
+        }
+
+        .waiting-card {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .waiting-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #1a73e8;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .btn-cancel-knock {
+            background: #f1f3f4;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+    </style>
 </body>
 
 </html>

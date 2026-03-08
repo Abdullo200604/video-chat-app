@@ -176,8 +176,21 @@ socket.on('permissions-updated', perms => {
     if (!permissions.participantMic && !isHost) forceMute();
     if (!permissions.participantCamera && !isHost) forceCamOff();
 });
-socket.on('force-kick', uid => { if (uid === myPeerId) { showToast('Mezbon sizi chiqardi.'); setTimeout(leaveMeeting, 1500); } });
-socket.on('set-mic-state', ({ uid, on }) => { if (uid === myPeerId) { if (micOn !== on) toggleMic(); } });
+socket.on('force-kick', (msg) => {
+    if (typeof msg === 'string') {
+        showToast(`❌ ${msg}`, 5000);
+        setTimeout(leaveMeeting, 2000);
+    } else if (msg === myPeerId) {
+        showToast('Mezbon sizi chiqardi.');
+        setTimeout(leaveMeeting, 1500);
+    }
+});
+socket.on('set-mic-state', ({ uid, on }) => {
+    if (uid === myPeerId || uid === 'all') {
+        if (micOn !== on) toggleMic();
+        if (uid === 'all' && !on) showToast('Mezbon barchani ovozini o\'chirdi');
+    }
+});
 socket.on('set-cam-state', ({ uid, on }) => { if (uid === myPeerId) { if (camOn !== on) toggleCam(); } });
 socket.on('status-update', (data) => {
     // If someone else updated their status (like videoOff), refresh their tile
@@ -185,11 +198,29 @@ socket.on('status-update', (data) => {
 });
 socket.on('user-raised-hand', (uid, name) => { showToast(`✋ ${name} qo'l ko'tardi`); markHandRaised(uid); });
 socket.on('show-reaction', ({ uid, name, emoji }) => showFloatingReaction(emoji, name));
-socket.on('room-expiry-warning', ({ message }) => {
-    showToast(`⚠️ ${message}`, 10000);
-});
 socket.on('host-pin-target', ({ targetId }) => {
     if (targetId) togglePin(targetId);
+});
+socket.on('join-request', ({ userId, name, socketId }) => {
+    if (!isHost) return;
+    const modal = document.getElementById('knockModal');
+    const msg = document.getElementById('knockMsg');
+    msg.textContent = `${name} majlisga kirishni so'ramoqda.`;
+    modal.classList.remove('hidden');
+
+    document.getElementById('admitBtn').onclick = () => {
+        socket.emit('join-response', { targetSocketId: socketId, approved: true });
+        modal.classList.add('hidden');
+    };
+    document.getElementById('denyBtn').onclick = () => {
+        socket.emit('join-response', { targetSocketId: socketId, approved: false });
+        modal.classList.add('hidden');
+    };
+});
+socket.on('room-lock-status', (locked) => {
+    showToast(locked ? '🔒 Majlis qulflandi' : '🔓 Majlis ochildi');
+    const check = document.getElementById('lockRoomCheck');
+    if (check) check.checked = locked;
 });
 
 // ── VIDEO TILES ──────────────────────────────────
@@ -469,6 +500,8 @@ function hostDisableCam(uid) {
 }
 function hostKick(uid) { socket.emit('host-kick-user', uid); }
 function hostPinUser(uid) { socket.emit('host-set-pin', { targetId: uid }); }
+function muteAllParticipants() { socket.emit('host-mute-all'); }
+function toggleRoomLock(locked) { socket.emit('host-toggle-lock', locked); }
 
 // ── PARTICIPANTS UI ───────────────────────────────
 function updateParticipantsUI() {

@@ -233,6 +233,17 @@
                 </label>
             </div>
 
+            <h4 class="section-label">Xona xavfsizligi</h4>
+            <div class="perm-list">
+                <label class="toggle-row">
+                    <span><i class="fas fa-lock"></i> Majlisni qulflash</span>
+                    <input type="checkbox" id="lockRoomCheck" onchange="toggleRoomLock(this.checked)">
+                </label>
+                <button class="btn-primary-sm full-width mt-10" onclick="muteAllParticipants()">
+                    <i class="fas fa-microphone-slash"></i> Hammada mikni o'chirish
+                </button>
+            </div>
+
             <h4 class="section-label">Ishtirokchilar</h4>
             <div class="participants-list host-list" id="hostParticipantsList"></div>
         </div>
@@ -324,6 +335,18 @@
 
     <!-- Toast notification -->
     <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Join Request Modal (for Host) -->
+    <div class="modal-overlay hidden" id="knockModal">
+        <div class="confirm-modal">
+            <h3 id="knockTitle">Kirish so'rovi</h3>
+            <p id="knockMsg">Ishtirokchi majlisga kirishni so'ramoqda.</p>
+            <div class="confirm-actions">
+                <button class="btn-cancel" id="denyBtn">Deny</button>
+                <button class="btn-leave-confirm" id="admitBtn" style="background:var(--green)">Admit</button>
+            </div>
+        </div>
+    </div>
 
     <script src="/script.js"></script>
 </body>

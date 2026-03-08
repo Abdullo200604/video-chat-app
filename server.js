@@ -250,6 +250,9 @@ app.get('/:room', (req, res) => {
   res.redirect(`/lobby/${roomId}`);
 });
 
+// Tracker for multi-tab prevention: sessionId -> socketId
+const activeSessions = new Map();
+
 // ── Socket.io ───────────────────────────────
 // Register random room socket handler BEFORE main join-room
 registerRandomSocket(io, rooms);
@@ -275,9 +278,31 @@ io.on('connection', socket => {
 
     const room = rooms[roomId];
 
-    // Point 2: Strict limit for DUO (private_random) and others
-    if (room.maxParticipants && Object.keys(room.participants).length >= room.maxParticipants) {
-      socket.emit('force-kick', 'Kechirasiz, xona to\'lib bo\'lgan.');
+    // Multi-tab prevention
+    const sessionId = socket.handshake.sessionID || socket.id;
+    if (activeSessions.has(sessionId) && activeSessions.get(sessionId) !== socket.id) {
+      // Check if the other socket is still connected to the same room
+      const otherSocket = io.sockets.sockets.get(activeSessions.get(sessionId));
+      if (otherSocket && otherSocket.rooms.has(roomId)) {
+        socket.emit('force-kick', 'Siz allaqachon boshqa tabda ushbu majlisdasiz.');
+        return;
+      }
+    }
+    activeSessions.set(sessionId, socket.id);
+
+    // Join Request check
+    if (room.accessType === 'request' && room.host && room.host !== userId) {
+      if (!room.participants[userId]) {
+        // Not approved yet - broadcast to host
+        io.to(room.host).emit('join-request', { userId, name, socketId: socket.id });
+        socket.emit('waiting-approval');
+        return;
+      }
+    }
+
+    // Room Lock check
+    if (room.locked && room.host !== userId && !room.participants[userId]) {
+      socket.emit('force-kick', 'Majlis qulflangan. Kirish imkonsiz.');
       return;
     }
 
@@ -397,6 +422,26 @@ io.on('connection', socket => {
       if (room && room.host === currentUserId) {
         io.to(currentRoomId).emit('host-pin-target', { targetId });
       }
+    });
+
+    socket.on('join-response', ({ targetSocketId, approved }) => {
+      if (!rooms[roomId] || rooms[roomId].host !== userId) return;
+      if (approved) {
+        io.to(targetSocketId).emit('join-approved');
+      } else {
+        io.to(targetSocketId).emit('join-denied');
+      }
+    });
+
+    socket.on('host-mute-all', () => {
+      if (!rooms[roomId] || rooms[roomId].host !== userId) return;
+      io.to(roomId).emit('set-mic-state', { uid: 'all', on: false });
+    });
+
+    socket.on('host-toggle-lock', (locked) => {
+      if (!rooms[roomId] || rooms[roomId].host !== userId) return;
+      rooms[roomId].locked = locked;
+      io.to(roomId).emit('room-lock-status', locked);
     });
 
     socket.on('disconnect', () => {
