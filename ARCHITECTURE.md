@@ -211,4 +211,30 @@ GitHub Push → Render Auto-Deploy
 
 ---
 
-*Hujjat avtomatik yaratildi — PDP Chat Random Rooms qo'shilishidan keyin yangilandi.*
+---
+
+## 🏗️ Kelajak Arxitekturasi: SFU Migration (Phase 17)
+
+Hozirgi tizim **Mesh P2P (PeerJS)** asosida ishlaydi. Bu 5-10 kishi uchun juda mos, lekin ishtirokchilar soni ortgani sari foydalanuvchi qurilmasiga (CPU/Bandwidth) yuklama karrasiga ko'payadi.
+
+### 1. Mesh vs SFU Taqqoslovi
+| Xususiyat | Mesh P2P (Hozirgi) | SFU (Kelajak) |
+|-----------|--------------------|---------------|
+| **Ulanish** | Har bir foydalanuvchi har biriga ulanadi | Har bir foydalanuvchi faqat serverga ulanadi |
+| **Bandwidth** | O(N²) — Ishtirokchi oshsa, internet qotadi | O(N) — Barqaror va past trafik |
+| **CPU yuklamasi** | Juda yuqori (N ta videoni dekodlash) | Past (Server faqat kerakli oqimni yuboradi) |
+| **Maks. Ishtirokchi** | ~10-15 kishi | 100+ ishtirokchi |
+
+### 2. Tavsiya etilayotgan SFU Texnologiyalari
+- **Mediasoup**: Node.js uchun eng kuchli va flexible SFU. Past darajadagi nazorat beradi.
+- **LiveKit**: Zamonaviy, Go tilida yozilgan, oson o'rnatiladigan va tayyor UI komponentlarga ega.
+
+### 3. Migratsiya Yo'l xaritasi (Roadmap)
+1. **Serverni Tayyorlash**: WebRTC oqimlarini qabul qila oladigan media-serverni (masalan, Mediasoup worker) o'rnatish.
+2. **Signaling Refaktoring**: Socket.io orqali PeerJS ID o'rniga WebRTC "Producers" va "Consumers" o'rtasida bog'liqlik yaratish.
+3. **Simulcast joriy etish**: Foydalanuvchi interneti yomon bo'lsa, server avtomatik pastroq sifatli (low-res) videoni yuborishi.
+4. **Recording**: Server-side recording (Composite video) tizimiga o'tish (hozirgi browser-side o'rniga).
+
+---
+
+*Hujjat avtomatik yangilandi — SFU Planning bosqichi qo'shildi.*
