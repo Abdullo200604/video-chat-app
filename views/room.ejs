@@ -33,6 +33,10 @@
                 <i class="fas fa-signal"></i>
                 <span id="connQualityText">Yaxshi</span>
             </div>
+            <div class="private-badge hidden" id="privateBadge" title="Maxfiy suhbat yoqilgan">
+                <i class="fas fa-user-shield"></i>
+                <span>Private</span>
+            </div>
             <div class="meeting-code">
                 <span id="meetingCodeText"></span>
                 <button class="icon-btn" onclick="copyMeetingLink()" title="Havolani nusxalash">
@@ -45,6 +49,12 @@
     <!-- ── MAIN VIDEO AREA ── -->
     <main class="video-area" id="videoArea">
         <div class="video-grid" id="videoGrid"></div>
+        <div class="privacy-watermark hidden" id="privacyWatermark"></div>
+        <div class="away-overlay hidden" id="awayOverlay">
+            <i class="fas fa-eye-slash"></i>
+            <p>Xavfsizlik tizimi: Majlis xiralashtirildi</p>
+            <span>Majlisga qaytish uchun oynaga bosing</span>
+        </div>
     </main>
 
     <!-- ── REACTION OVERLAY ── -->

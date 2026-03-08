@@ -107,6 +107,7 @@ app.post('/api/create-room', (req, res) => {
   rooms[roomId] = {
     host: null,
     accessType,
+    isPrivate: !!req.body.isPrivate,
     theaterMode: false,
     chatEnabled: true,
     startTime: Date.now(),
@@ -335,7 +336,10 @@ io.on('connection', socket => {
 
     socket.to(roomId).emit('user-connected', userId, currentName);
     io.to(roomId).emit('participants-update', room.participants);
-    if (adminRouter && adminRouter.addLog) adminRouter.addLog(`User ${currentName} (${userId}) joined room ${roomId}`);
+
+    if (adminRouter && adminRouter.addLog && !room.isPrivate) {
+      adminRouter.addLog(`User ${currentName} (${userId}) joined room ${roomId}`);
+    }
 
     // ── In-room events ──────────────────
 

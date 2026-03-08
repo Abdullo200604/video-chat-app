@@ -147,8 +147,70 @@ socket.on('room-state', state => {
     updateParticipantsUI();
     if (state.startTime) startTimer(state.startTime);
     syncEffects();
+
+    if (state.isPrivate) {
+        initPrivateSession();
+    }
+
     if (state.theaterMode) { theaterActive = true; enterTheaterUI(); }
 });
+
+function initPrivateSession() {
+    const badge = document.getElementById('privateBadge');
+    if (badge) badge.classList.remove('hidden');
+
+    initPrivacyWatermark();
+    initPrivacyBlur();
+    initPrivacyGuard();
+
+    showToast('🛡️ Maxfiy suhbat rejasi faollashtirildi');
+}
+
+function initPrivacyWatermark() {
+    const cont = document.getElementById('privacyWatermark');
+    if (!cont) return;
+    cont.classList.remove('hidden');
+
+    // Create several moving layers
+    for (let i = 0; i < 3; i++) {
+        const span = document.createElement('span');
+        span.className = 'watermark-text';
+        span.textContent = `${myName} [${myPeerId.substring(0, 6)}]`;
+        span.style.animationDelay = (i * 8) + 's';
+        cont.appendChild(span);
+    }
+}
+
+function initPrivacyBlur() {
+    const overlay = document.getElementById('awayOverlay');
+    if (!overlay) return;
+
+    window.addEventListener('blur', () => {
+        overlay.classList.remove('hidden');
+    });
+
+    overlay.onclick = () => overlay.classList.add('hidden');
+}
+
+function initPrivacyGuard() {
+    // Block common screenshot/inspect keys
+    window.addEventListener('keydown', e => {
+        if (
+            e.key === 'F12' ||
+            (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
+            (e.ctrlKey && e.key === 'U') ||
+            e.key === 'PrintScreen'
+        ) {
+            e.preventDefault();
+            showToast('⚠️ Maxfiylik tizimi: Ushbu amal taqiqlangan', 4000);
+            return false;
+        }
+    });
+
+    window.addEventListener('contextmenu', e => {
+        e.preventDefault();
+    });
+}
 socket.on('user-connected', (uid, name) => {
     participants[uid] = { name: name || 'Mehmon' };
     setTimeout(() => callUser(uid), 1000);
