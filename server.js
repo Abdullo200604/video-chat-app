@@ -189,6 +189,12 @@ app.get('/admin', adminAuth, (req, res) => {
   res.sendFile(__dirname + '/public/admin/dashboard.html');
 });
 
+// Helper for mistakenly typed URLs like /admin/token=... or /admin/secret
+app.get('/admin/:token', (req, res) => {
+  const tokenParams = req.params.token.replace('token=', '');
+  res.redirect('/admin?token=' + tokenParams);
+});
+
 // Legacy direct room route (Catch all)
 app.get('/:room', (req, res) => {
   const roomId = req.params.room;
