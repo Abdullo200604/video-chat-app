@@ -29,6 +29,11 @@ app.use(express.static('public'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+const fs = require('fs');
+if (!fs.existsSync('./sessions')) {
+  fs.mkdirSync('./sessions');
+}
+
 // Sessiya sozlamalari
 app.use(session({
   store: new FileStore({ path: './sessions' }),
@@ -344,14 +349,18 @@ io.on('connection', socket => {
       delete rooms[roomId].participants[userId];
 
       if (Object.keys(rooms[roomId].participants).length === 0) {
-        delete rooms[roomId];
-      } else if (rooms[roomId].host === userId) {
-        const next = Object.keys(rooms[roomId].participants)[0];
-        rooms[roomId].host = next;
-        io.to(roomId).emit('new-host', next);
+        delete rooms[roomId]; // Room is empty, delete it
+      } else {
+        // Only assign a new host and update others if the room still exists
+        if (rooms[roomId].host === userId) {
+          const next = Object.keys(rooms[roomId].participants)[0];
+          rooms[roomId].host = next;
+          io.to(roomId).emit('new-host', next);
+        }
+        io.to(roomId).emit('participants-update', rooms[roomId].participants);
       }
+
       io.to(roomId).emit('user-disconnected', userId);
-      io.to(roomId).emit('participants-update', rooms[roomId].participants);
     });
   });
 });
