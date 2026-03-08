@@ -173,6 +173,16 @@
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
+        // Check for token in URL (e.g., ?token=pdp2024secret)
+        const urlParams = new URLSearchParams(window.location.search);
+        let urlToken = urlParams.get('token');
+
+        if (urlToken) {
+            localStorage.setItem('adminToken', urlToken);
+            // Optionally remove the token from URL for security
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
         let token = localStorage.getItem('adminToken') || '';
         if (token) document.getElementById('adminToken').value = token;
 

@@ -11,12 +11,14 @@ module.exports = function (rooms, scheduledMeetings, bannedUsers, io) {
             totalOnlineUsers += Object.keys(r.participants).length;
         });
 
-        res.json({
+        const data = {
             totalUsers: totalOnlineUsers + bannedUsers.length, // approximation of known users
             activeMeetings: activeRooms,
             onlineUsers: totalOnlineUsers,
             totalScheduled: scheduledMeetings.length
-        });
+        };
+        console.log('[Admin Dashboard Requested] Stats:', data);
+        res.json(data);
     });
 
     // 2. Users Management
