@@ -23,6 +23,7 @@
         </a>
         <div class="nav-actions" id="navActions">
             <a class="btn-random-nav" href="/random">🎲 Random Chat</a>
+            <a class="btn-text" href="javascript:void(0)" onclick="openModal()">🎮 O'yinlar</a>
             <button class="btn-text" onclick="window.location.href='/auth/google'">Kirish</button>
             <button class="btn-primary-sm" onclick="openModal()">Majlis boshlash</button>
         </div>
@@ -157,6 +158,16 @@
                 <div class="option-text">
                     <strong>Maxfiy majlis boshlash</strong>
                     <span>Hech qanday loglarsiz va yuqori maxfiylik bilan</span>
+                </div>
+                <i class="fas fa-chevron-right option-arrow"></i>
+            </button>
+            <button class="modal-option" onclick="startNow()">
+                <div class="option-icon" style="background:rgba(147, 51, 234, 0.1)"><i class="fas fa-gamepad"
+                        style="color:#9333ea"></i>
+                </div>
+                <div class="option-text">
+                    <strong>🎮 O'yinlar o'ynash</strong>
+                    <span>Do'stlar bilan Tic-Tac-Toe o'ynash uchun xona ochish</span>
                 </div>
                 <i class="fas fa-chevron-right option-arrow"></i>
             </button>
