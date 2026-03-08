@@ -182,7 +182,8 @@ app.delete('/api/schedule/:id', (req, res) => {
 
 // ── Admin Route Integration ────────────────────────
 const bannedUsers = [];
-app.use('/api/admin', adminAuth, adminRoutes(rooms, scheduledMeetings, bannedUsers, io));
+const adminRouter = adminRoutes(rooms, scheduledMeetings, bannedUsers, io);
+app.use('/api/admin', adminAuth, adminRouter);
 
 app.get('/admin', adminAuth, (req, res) => {
   res.sendFile(__dirname + '/public/admin/dashboard.html');
@@ -249,6 +250,7 @@ io.on('connection', socket => {
 
     socket.to(roomId).emit('user-connected', userId, currentName);
     io.to(roomId).emit('participants-update', room.participants);
+    if (adminRouter && adminRouter.addLog) adminRouter.addLog(`User ${currentName} (${userId}) joined room ${roomId}`);
 
     // ── In-room events ──────────────────
 
@@ -263,6 +265,39 @@ io.on('connection', socket => {
       rooms[roomId].theaterMode = enabled;
       io.to(roomId).emit('theater-mode-changed', enabled);
     });
+
+    // ── Host Controls ───────────────────
+
+    socket.on('kick-participant', (targetId) => {
+      // faqat host kick qila oladi
+      if (!rooms[roomId]) return;
+      if (rooms[roomId].host === userId && rooms[roomId].participants[targetId]) {
+        io.to(roomId).emit('force-kick', targetId);
+      }
+    });
+
+    socket.on('toggle-participant-mic', (targetId, state) => {
+      if (!rooms[roomId]) return;
+      if (rooms[roomId].host === userId) {
+        io.to(roomId).emit('host-toggled-mic', targetId, state);
+      }
+    });
+
+    // ── User statuses ───────────────────
+    socket.on('status-update', (updates) => {
+      const room = rooms[roomId];
+      if (!room || !room.participants[userId]) return;
+
+      const p = room.participants[userId];
+      if (updates.muted !== undefined) p.muted = updates.muted;
+      if (updates.videoOff !== undefined) p.videoOff = updates.videoOff;
+      if (updates.effect !== undefined) p.effect = updates.effect;
+
+      // Broadcast back to all
+      io.to(roomId).emit('participants-update', room.participants);
+    });
+
+    // (O'chirildi)
 
     // Host commands
     socket.on('host-set-mic', ({ targetId, on }) => {
@@ -287,7 +322,6 @@ io.on('connection', socket => {
       rooms[roomId].chatEnabled = enabled;
       io.to(roomId).emit('chat-toggled', enabled);
     });
-
     // Raise hand
     socket.on('raise-hand', () => {
       socket.to(roomId).emit('user-raised-hand', userId, currentName);
@@ -298,15 +332,8 @@ io.on('connection', socket => {
       io.to(roomId).emit('show-reaction', { uid: userId, name: currentName, emoji });
     });
 
-    // Participant status update
-    socket.on('status-update', (status) => {
-      if (rooms[roomId] && rooms[roomId].participants[userId]) {
-        Object.assign(rooms[roomId].participants[userId], status);
-        io.to(roomId).emit('participants-update', rooms[roomId].participants);
-      }
-    });
-
     socket.on('disconnect', () => {
+      if (adminRouter && adminRouter.addLog) adminRouter.addLog(`User ${currentName} (${userId}) left room ${roomId}`);
       if (!rooms[roomId]) return;
       delete rooms[roomId].participants[userId];
 

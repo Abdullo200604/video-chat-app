@@ -107,18 +107,11 @@ module.exports = function (rooms, scheduledMeetings, bannedUsers, io) {
     const logs = [{ time: new Date().toLocaleTimeString(), msg: 'Admin System Initialized' }];
     router.get('/logs', (req, res) => res.json(logs));
 
-    // Middleware to log important events
-    io.use((socket, next) => {
-        const origEmit = socket.emit;
-        socket.emit = function (...args) {
-            if (args[0] === 'user-connected' || args[0] === 'user-disconnected') {
-                logs.unshift({ time: new Date().toLocaleTimeString(), msg: `Socket event: ${args[0]}` });
-                if (logs.length > 50) logs.pop();
-            }
-            origEmit.apply(socket, args);
-        };
-        next();
-    });
+    // Expose a method to add logs from server.js safely without overriding emit
+    router.addLog = (msg) => {
+        logs.unshift({ time: new Date().toLocaleTimeString(), msg });
+        if (logs.length > 50) logs.pop();
+    };
 
     return router;
 };
