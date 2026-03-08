@@ -1,4 +1,6 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 
 module.exports = function (rooms, scheduledMeetings, bannedUsers, io) {
     const router = express.Router();
@@ -11,8 +13,15 @@ module.exports = function (rooms, scheduledMeetings, bannedUsers, io) {
             totalOnlineUsers += Object.keys(r.participants).length;
         });
 
+        let registeredUsers = 0;
+        try {
+            if (fs.existsSync('./sessions')) {
+                registeredUsers = fs.readdirSync('./sessions').filter(f => f.endsWith('.json')).length;
+            }
+        } catch (e) { }
+
         const data = {
-            totalUsers: totalOnlineUsers + bannedUsers.length, // approximation of known users
+            totalUsers: registeredUsers > 0 ? registeredUsers : (totalOnlineUsers + bannedUsers.length),
             activeMeetings: activeRooms,
             onlineUsers: totalOnlineUsers,
             totalScheduled: scheduledMeetings.length
@@ -23,16 +32,44 @@ module.exports = function (rooms, scheduledMeetings, bannedUsers, io) {
 
     // 2. Users Management
     router.get('/users', (req, res) => {
-        // Mix active users with banned profiles for the table
         const users = [];
+        const activeUids = new Set();
+
+        // 1. Ochiq xonadagi odamlar
         Object.entries(rooms).forEach(([roomId, room]) => {
             Object.entries(room.participants).forEach(([uid, u]) => {
                 users.push({ id: uid, name: u.name, roomId, status: 'Active' });
+                activeUids.add(uid);
             });
         });
+
+        // 2. Banned qilinganlar
         bannedUsers.forEach(uid => {
-            users.push({ id: uid, name: 'Banned User (' + uid + ')', roomId: '-', status: 'Banned' });
+            if (!activeUids.has(uid)) {
+                users.push({ id: uid, name: 'Banned User (' + uid + ')', roomId: '-', status: 'Banned' });
+                activeUids.add(uid);
+            }
         });
+
+        // 3. Tizimdan ulanib turgan (lekin xonada emas) foydalanuvchilar (Sessions directorydan o'qish)
+        try {
+            if (fs.existsSync('./sessions')) {
+                const files = fs.readdirSync('./sessions').filter(f => f.endsWith('.json'));
+                files.forEach(f => {
+                    try {
+                        const content = JSON.parse(fs.readFileSync(path.join('./sessions', f)));
+                        if (content.passport && content.passport.user) {
+                            const u = content.passport.user;
+                            if (!activeUids.has(u.id)) {
+                                users.push({ id: u.id, name: u.name || 'Foydalanuvchi', roomId: 'Tizimda (Kutish)', status: 'Idle' });
+                                activeUids.add(u.id);
+                            }
+                        }
+                    } catch (err) { }
+                });
+            }
+        } catch (exc) { }
+
         res.json(users);
     });
 
