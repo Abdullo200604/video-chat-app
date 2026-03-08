@@ -125,15 +125,15 @@ app.post('/api/create-room', (req, res) => {
 // Lobby (pre-join) page
 app.get('/lobby/:room', (req, res) => {
   const roomId = req.params.room;
+
+  // Strict format validation: XXX-XXX-XXX
+  const idPattern = /^[A-Z0-9]{3}-[A-Z0-9]{3}-[A-Z0-9]{3}$/;
+  if (!idPattern.test(roomId)) {
+    return res.status(404).render('not-found');
+  }
+
   if (!rooms[roomId]) {
-    // Auto-create room if someone with a direct link joins
-    rooms[roomId] = {
-      host: null, accessType: 'open', theaterMode: false,
-      chatEnabled: true,
-      startTime: Date.now(),
-      permissions: { screenShare: true, reactions: true, participantMic: true, participantCamera: true },
-      waitingRoom: [], participants: {}
-    };
+    return res.status(404).render('not-found');
   }
   res.render('lobby', { roomId });
 });
@@ -141,14 +141,9 @@ app.get('/lobby/:room', (req, res) => {
 // Meeting room page
 app.get('/meeting/:room', (req, res) => {
   const roomId = req.params.room;
+
   if (!rooms[roomId]) {
-    rooms[roomId] = {
-      host: null, accessType: 'open', theaterMode: false,
-      chatEnabled: true,
-      startTime: Date.now(),
-      permissions: { screenShare: true, reactions: true, participantMic: true, participantCamera: true },
-      waitingRoom: [], participants: {}
-    };
+    return res.status(404).render('not-found');
   }
   res.render('room', { roomId });
 });
@@ -184,6 +179,48 @@ app.delete('/api/schedule/:id', (req, res) => {
   scheduledMeetings.splice(idx, 1);
   res.json({ ok: true });
 });
+
+// ── Auto-Expiration System ────────────────────────
+// Track rooms with 1 user to warn them
+const singleUserWarnings = new Map(); // roomId -> timestamp
+
+setInterval(() => {
+  const now = Date.now();
+  for (const roomId in rooms) {
+    const room = rooms[roomId];
+    const participantsCount = Object.keys(room.participants).length;
+
+    if (participantsCount === 1) {
+      if (!singleUserWarnings.has(roomId)) {
+        singleUserWarnings.set(roomId, now);
+      } else {
+        const waitingDuration = now - singleUserWarnings.get(roomId);
+        const warningTime = 10 * 60 * 1000; // 10 minutes
+        const expiryTime = 15 * 60 * 1000;  // 15 minutes
+
+        if (waitingDuration > expiryTime) {
+          io.to(roomId).emit('force-kick', 'Majlis vaqti tugadi (ishtirokchi yetishmasligi sababli).');
+          delete rooms[roomId];
+          singleUserWarnings.delete(roomId);
+          console.log(`[Expiry] Room ${roomId} closed due to inactivity.`);
+        } else if (waitingDuration > warningTime) {
+          // Send warning if not already sent recently (could add more logic here)
+          io.to(roomId).emit('room-expiry-warning', {
+            message: "Siz hali ham yolg'izsiz. Majlis 5 daqiqadan so'ng yopiladi.",
+            canExtend: true
+          });
+        }
+      }
+    } else if (participantsCount > 1 || participantsCount === 0) {
+      singleUserWarnings.delete(roomId);
+
+      // Cleanup empty rooms if they persist (e.g. ghost connections)
+      if (participantsCount === 0 && now - room.startTime > 30 * 60 * 1000) {
+        delete rooms[roomId];
+      }
+    }
+  }
+}, 30000); // Check every 30 seconds
 
 // ── Admin Route Integration ────────────────────────
 const bannedUsers = [];
@@ -230,16 +267,20 @@ io.on('connection', socket => {
 
     currentRoomId = roomId;
     currentUserId = userId;
+
     if (!rooms[roomId]) {
-      rooms[roomId] = {
-        host: userId, accessType: 'open', theaterMode: false,
-        chatEnabled: true,
-        startTime: Date.now(),
-        permissions: { screenShare: true, reactions: true, participantMic: true, participantCamera: true },
-        waitingRoom: [], participants: {}
-      };
+      socket.emit('force-kick', 'Siz qidirayotgan majlis topilmadi.');
+      return;
     }
+
     const room = rooms[roomId];
+
+    // Point 2: Strict limit for DUO (private_random) and others
+    if (room.maxParticipants && Object.keys(room.participants).length >= room.maxParticipants) {
+      socket.emit('force-kick', 'Kechirasiz, xona to\'lib bo\'lgan.');
+      return;
+    }
+
     const isHost = room.host === userId || !room.host;
     if (isHost) room.host = userId;
 

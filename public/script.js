@@ -185,6 +185,9 @@ socket.on('status-update', (data) => {
 });
 socket.on('user-raised-hand', (uid, name) => { showToast(`✋ ${name} qo'l ko'tardi`); markHandRaised(uid); });
 socket.on('show-reaction', ({ uid, name, emoji }) => showFloatingReaction(emoji, name));
+socket.on('room-expiry-warning', ({ message }) => {
+    showToast(`⚠️ ${message}`, 10000);
+});
 
 // ── VIDEO TILES ──────────────────────────────────
 function addTile(stream, peerId, name, isMe) {
@@ -609,8 +612,10 @@ async function loadDevices() {
     const devs = await navigator.mediaDevices.enumerateDevices().catch(() => []);
     const camSel = document.getElementById('cameraSelect');
     const micSel = document.getElementById('micSelect');
+    const spkSel = document.getElementById('speakerSelect');
     camSel.innerHTML = '';
     micSel.innerHTML = '';
+    spkSel.innerHTML = '';
     devs.filter(d => d.kind === 'videoinput').forEach(d => {
         const o = document.createElement('option');
         o.value = d.deviceId; o.textContent = d.label || 'Kamera';
@@ -621,10 +626,30 @@ async function loadDevices() {
         o.value = d.deviceId; o.textContent = d.label || 'Mikrofon';
         micSel.appendChild(o);
     });
+    devs.filter(d => d.kind === 'audiooutput').forEach(d => {
+        const o = document.createElement('option');
+        o.value = d.deviceId; o.textContent = d.label || 'Speaker';
+        spkSel.appendChild(o);
+    });
     const savedCam = sessionStorage.getItem('pdp_cam_id');
     const savedMic = sessionStorage.getItem('pdp_mic_id');
+    const savedSpk = sessionStorage.getItem('pdp_spk_id');
     if (savedCam) camSel.value = savedCam;
     if (savedMic) micSel.value = savedMic;
+    if (savedSpk) spkSel.value = savedSpk;
+}
+
+async function switchSpeaker(deviceId) {
+    if (!deviceId) return;
+    sessionStorage.setItem('pdp_spk_id', deviceId);
+
+    const videos = document.querySelectorAll('video');
+    for (const vid of videos) {
+        if (typeof vid.setSinkId === 'function') {
+            await vid.setSinkId(deviceId).catch(e => console.error('SinkId error:', e));
+        }
+    }
+    showToast('Dinamik o\'zgartirildi');
 }
 
 async function switchCamera(deviceId) {
@@ -736,30 +761,47 @@ function toggleRecording() {
     else startRecording();
 }
 
-function startRecording() {
-    if (!myStream) { showToast('Kamera/mikrofon yo\'q, yozib bo\'lmaydi.'); return; }
-
-    // Combine all streams into one canvas if possible, else record myStream
-    const tracks = [...myStream.getTracks()];
-    const combinedStream = new MediaStream(tracks);
-
-    const options = { mimeType: 'video/webm;codecs=vp9,opus' };
+async function startRecording() {
     try {
-        mediaRecorder = new MediaRecorder(combinedStream, options);
-    } catch {
-        mediaRecorder = new MediaRecorder(combinedStream);
+        // High quality whole room recording using GetDisplayMedia
+        // This captures all UI, all participant videos, and system audio.
+        const combinedStream = await navigator.mediaDevices.getDisplayMedia({
+            video: {
+                displaySurface: 'browser',
+                cursor: 'always'
+            },
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                sampleRate: 44100
+            }
+        });
+
+        const options = { mimeType: 'video/webm;codecs=vp9,opus' };
+        try {
+            mediaRecorder = new MediaRecorder(combinedStream, options);
+        } catch {
+            mediaRecorder = new MediaRecorder(combinedStream);
+        }
+
+        recordedChunks = [];
+        mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+        mediaRecorder.onstop = () => {
+            combinedStream.getTracks().forEach(t => t.stop());
+            downloadRecording();
+        };
+        mediaRecorder.start(1000);
+
+        recordingOn = true;
+        document.getElementById('recIndicator').classList.remove('hidden');
+        document.getElementById('recordBtn').classList.add('off-state');
+        document.getElementById('recordBtn').querySelector('span').textContent = 'To\'xtat';
+        showToast('🔴 Majlis to\'liq yozib olinmoqda...');
+    } catch (err) {
+        console.error("Recording error:", err);
+        showToast('Yozib olish bekor qilindi yoki xatolik yuz berdi.');
+        recordingOn = false;
     }
-
-    recordedChunks = [];
-    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
-    mediaRecorder.onstop = downloadRecording;
-    mediaRecorder.start(1000);
-
-    recordingOn = true;
-    document.getElementById('recIndicator').classList.remove('hidden');
-    document.getElementById('recordBtn').classList.add('off-state');
-    document.getElementById('recordBtn').querySelector('span').textContent = 'To\'xtat';
-    showToast('🔴 Yozib olish boshlandi!');
 }
 
 function stopRecording() {

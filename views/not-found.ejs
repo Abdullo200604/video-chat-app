@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meeting topilmadi – PDP Chat</title>
+    <link rel="icon" type="image/png" href="/logo.png">
+    <link rel="stylesheet" href="/index.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .error-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .error-icon {
+            font-size: 80px;
+            color: #ea4335;
+            margin-bottom: 20px;
+        }
+
+        .error-title {
+            font-size: 32px;
+            margin-bottom: 10px;
+            color: #202124;
+        }
+
+        .error-msg {
+            font-size: 18px;
+            color: #5f6368;
+            margin-bottom: 30px;
+            max-width: 500px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="error-container">
+        <div class="error-icon">
+            <i class="fas fa-exclamation-circle"></i>
+        </div>
+        <h1 class="error-title">Meeting topilmadi yoki muddati o'tgan</h1>
+        <p class="error-msg">
+            Siz qidirayotgan majlis manzili noto'g'ri yoki u allaqachon yakunlangan bo'lishi mumkin.
+            Iltimos, manzilni tekshiring yoki yangi majlis yarating.
+        </p>
+        <button class="btn-primary-lg" onclick="window.location.href='/'">
+            <i class="fas fa-home"></i> Bosh sahifaga qaytish
+        </button>
+    </div>
+</body>
+
+</html>
