@@ -188,6 +188,9 @@ socket.on('show-reaction', ({ uid, name, emoji }) => showFloatingReaction(emoji,
 socket.on('room-expiry-warning', ({ message }) => {
     showToast(`⚠️ ${message}`, 10000);
 });
+socket.on('host-pin-target', ({ targetId }) => {
+    if (targetId) togglePin(targetId);
+});
 
 // ── VIDEO TILES ──────────────────────────────────
 function addTile(stream, peerId, name, isMe) {
@@ -217,13 +220,20 @@ function addTile(stream, peerId, name, isMe) {
     avatar.style.background = `linear-gradient(135deg, #1a73e8, #0d47a1)`;
     avatar.textContent = (name || 'M').charAt(0).toUpperCase();
 
-    tile.appendChild(vid);
-    tile.appendChild(avatar);
-    tile.appendChild(info);
+    // ── Tile Controls (Pin, Fullscreen) ──
+    const ctrls = document.createElement('div');
+    ctrls.className = 'tile-controls';
+    ctrls.innerHTML = `
+        <button class="tile-ctrl-btn" onclick="togglePin('${peerId}')" title="Qadash">
+            <i class="fas fa-thumbtack"></i>
+        </button>
+        <button class="tile-ctrl-btn" onclick="enterFocusMode('${peerId}')" title="Kattalashtirish">
+            <i class="fas fa-expand"></i>
+        </button>
+    `;
+    tile.appendChild(ctrls);
 
-    // Apply existing effect if any
-    const effect = isMe ? currentEffect : (participants[peerId]?.effect || 'none');
-    vid.style.filter = effectFilters[effect] || '';
+    tile.addEventListener('dblclick', () => enterFocusMode(peerId));
 
     videoGrid.appendChild(tile);
     tiles[peerId] = tile;
@@ -238,8 +248,35 @@ function addTile(stream, peerId, name, isMe) {
     if (theaterActive) updateTheaterAvatars();
 }
 
+function togglePin(peerId) {
+    const tile = tiles[peerId];
+    if (!tile) return;
+
+    const isPinned = tile.classList.contains('pinned');
+
+    // Unpin all first
+    Object.values(tiles).forEach(t => t.classList.remove('pinned'));
+
+    if (!isPinned) {
+        tile.classList.add('pinned');
+        videoGrid.classList.add('has-pinned');
+        showToast(`${participants[peerId]?.name || 'Ishtirokchi'} qadab qo'yildi`);
+    } else {
+        videoGrid.classList.remove('has-pinned');
+        showToast('Qadash bekor qilindi');
+    }
+
+    // Update active speaker logic in theater if needed? Not for now.
+}
+
 function removeTile(peerId) {
-    if (tiles[peerId]) { tiles[peerId].remove(); delete tiles[peerId]; }
+    if (tiles[peerId]) {
+        if (tiles[peerId].classList.contains('pinned')) {
+            videoGrid.classList.remove('has-pinned');
+        }
+        tiles[peerId].remove();
+        delete tiles[peerId];
+    }
     if (streams[peerId]) delete streams[peerId];
     updateGridCount();
     if (theaterActive) updateTheaterAvatars();
@@ -247,7 +284,17 @@ function removeTile(peerId) {
 
 function updateGridCount() {
     const n = videoGrid.children.length;
-    videoGrid.className = 'video-grid ' + (n === 1 ? 'count-1' : n === 2 ? 'count-2' : n <= 4 ? 'count-3' : n <= 6 ? 'count-many' : 'count-many');
+    const hasPinned = videoGrid.classList.contains('has-pinned');
+
+    // Clean class list and set state
+    videoGrid.classList.remove('count-1', 'count-2', 'count-3', 'count-many');
+
+    if (hasPinned) {
+        videoGrid.classList.add('has-pinned');
+    } else {
+        // Fallback for very small counts if needed, but CSS handles it
+        if (n === 1) videoGrid.classList.add('count-1');
+    }
 }
 
 // ── PEER CONNECTION ──────────────────────────────
@@ -421,6 +468,7 @@ function hostDisableCam(uid) {
     socket.emit('host-set-cam', { targetId: uid, on: !!isOff }); // Switch to opposite
 }
 function hostKick(uid) { socket.emit('host-kick-user', uid); }
+function hostPinUser(uid) { socket.emit('host-set-pin', { targetId: uid }); }
 
 // ── PARTICIPANTS UI ───────────────────────────────
 function updateParticipantsUI() {
@@ -438,6 +486,35 @@ function updateParticipantsUI() {
         const color = colors[i % colors.length];
         const initial = (info.name || 'M').charAt(0).toUpperCase();
         const isMe_ = uid === myPeerId;
+
+        // --- Participant List Item ---
+        const item = document.createElement('div');
+        item.className = 'participant-item';
+        item.innerHTML = `
+            <div class="part-avatar" style="background:${color}">${initial}</div>
+            <div class="part-name">${info.name}${isMe_ ? ' (Siz)' : ''}</div>
+            <div class="part-status">
+                <i class="fas ${info.muted ? 'fa-microphone-slash red' : 'fa-microphone'}"></i>
+                <i class="fas ${info.videoOff ? 'fa-video-slash red' : 'fa-video'}"></i>
+            </div>
+        `;
+        list?.appendChild(item);
+
+        // --- Host Panel Item ---
+        if (hList && !isMe_) {
+            const hItem = document.createElement('div');
+            hItem.className = 'host-part-item';
+            hItem.innerHTML = `
+                <div class="part-name">${info.name}</div>
+                <div class="host-part-ctrls">
+                    <button onclick="hostPinUser('${uid}')" title="Global qadash"><i class="fas fa-thumbtack"></i></button>
+                    <button onclick="hostMute('${uid}')" class="${info.muted ? 'off' : ''}"><i class="fas ${info.muted ? 'fa-microphone-slash' : 'fa-microphone'}"></i></button>
+                    <button onclick="hostDisableCam('${uid}')" class="${info.videoOff ? 'off' : ''}"><i class="fas ${info.videoOff ? 'fa-video-slash' : 'fa-video'}"></i></button>
+                    <button onclick="hostKick('${uid}')" class="kick"><i class="fas fa-user-minus"></i></button>
+                </div>
+            `;
+            hList.appendChild(hItem);
+        }
 
         // Sync tile visibility & effect if state changed
         const tile = tiles[isMe_ ? 'me' : uid];
@@ -585,20 +662,65 @@ function updateTheaterAvatars() {
     });
 }
 
-function enterFocusMode() {
-    if (focusActive) return;
+let focusZoom = 1;
+let focusPan = { x: 0, y: 0 };
+let isDragging = false;
+let startPos = { x: 0, y: 0 };
+
+function enterFocusMode(peerId) {
     focusActive = true;
     const overlay = document.getElementById('focusOverlay');
-    const src = document.querySelector('#theaterMainVideo video');
     const cont = document.getElementById('focusVideoContainer');
     cont.innerHTML = '';
-    if (src) {
-        const v = document.createElement('video');
-        v.srcObject = src.srcObject; v.playsInline = true; v.autoplay = true; v.muted = src.muted;
-        v.play().catch(() => { });
-        cont.appendChild(v);
-    }
+
+    // Get stream from our store
+    const s = (peerId === 'me' ? myStream : streams[peerId]);
+    if (!s) return;
+
+    const v = document.createElement('video');
+    v.srcObject = s; v.playsInline = true; v.autoplay = true; v.muted = (peerId === 'me');
+    v.style.transition = 'transform 0.1s ease-out';
+    v.play().catch(() => { });
+
+    // Zoom/Pan logic
+    v.addEventListener('wheel', e => {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -0.2 : 0.2;
+        focusZoom = Math.min(Math.max(1, focusZoom + delta), 5);
+        updateFocusTransform(v);
+    });
+
+    v.addEventListener('mousedown', e => {
+        if (focusZoom > 1) {
+            isDragging = true;
+            startPos = { x: e.clientX - focusPan.x, y: e.clientY - focusPan.y };
+            v.style.cursor = 'grabbing';
+        }
+    });
+
+    window.addEventListener('mousemove', e => {
+        if (!isDragging) return;
+        focusPan.x = e.clientX - startPos.x;
+        focusPan.y = e.clientY - startPos.y;
+        updateFocusTransform(v);
+    });
+
+    window.addEventListener('mouseup', () => {
+        isDragging = false;
+        if (v) v.style.cursor = focusZoom > 1 ? 'grab' : 'default';
+    });
+
+    cont.appendChild(v);
     overlay.classList.add('active');
+    focusZoom = 1;
+    focusPan = { x: 0, y: 0 };
+    updateFocusTransform(v);
+}
+
+function updateFocusTransform(video) {
+    if (!video) return;
+    video.style.transform = `scale(${focusZoom}) translate(${focusPan.x / focusZoom}px, ${focusPan.y / focusZoom}px)`;
+    video.style.cursor = focusZoom > 1 ? 'grab' : 'default';
 }
 
 function exitFocusMode() {

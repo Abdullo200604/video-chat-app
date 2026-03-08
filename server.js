@@ -392,6 +392,13 @@ io.on('connection', socket => {
       io.to(roomId).emit('show-reaction', { uid: userId, name: currentName, emoji });
     });
 
+    socket.on('host-set-pin', ({ targetId }) => {
+      const room = rooms[currentRoomId];
+      if (room && room.host === currentUserId) {
+        io.to(currentRoomId).emit('host-pin-target', { targetId });
+      }
+    });
+
     socket.on('disconnect', () => {
       if (adminRouter && adminRouter.addLog) adminRouter.addLog(`User ${currentName} (${userId}) left room ${roomId}`);
       if (!rooms[roomId]) return;
