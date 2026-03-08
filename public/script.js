@@ -63,17 +63,29 @@ const videoGrid = document.getElementById('videoGrid');
 (async () => {
     document.getElementById('meetingCodeText').textContent = ROOM_ID;
     // Initial timer will be updated by room-state
-    await loadDevices();
 
     try {
-        myStream = await navigator.mediaDevices.getUserMedia({ video: camOn, audio: true });
+        const savedCam = sessionStorage.getItem('pdp_cam_id');
+        const savedMic = sessionStorage.getItem('pdp_mic_id');
+        const constraints = {
+            video: camOn ? (savedCam ? { deviceId: { exact: savedCam } } : true) : false,
+            audio: savedMic ? { deviceId: { exact: savedMic } } : true
+        };
+        myStream = await navigator.mediaDevices.getUserMedia(constraints);
         if (!micOn) myStream.getAudioTracks().forEach(t => t.enabled = false);
         if (!camOn) myStream.getVideoTracks().forEach(t => t.enabled = false);
     } catch (e) {
-        // Try audio only
-        try { myStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true }); camOn = false; }
-        catch (e2) { myStream = null; showToast('Qurilmaga kirish imkoni yo\'lq'); }
+        // Fallback to default devices if specific IDs fail or unplugged
+        try {
+            myStream = await navigator.mediaDevices.getUserMedia({ video: camOn, audio: true });
+            if (!micOn) myStream.getAudioTracks().forEach(t => t.enabled = false);
+            if (!camOn) myStream.getVideoTracks().forEach(t => t.enabled = false);
+        }
+        catch (e2) { myStream = null; showToast('Qurilmaga kirish imkoni yo\'q'); }
     }
+
+    // Load devices AFTER permission is granted (to see real device names)
+    await loadDevices();
 
     if (myStream) addTile(myStream, 'me', myName, true);
 })();
@@ -596,6 +608,8 @@ async function loadDevices() {
     const devs = await navigator.mediaDevices.enumerateDevices().catch(() => []);
     const camSel = document.getElementById('cameraSelect');
     const micSel = document.getElementById('micSelect');
+    camSel.innerHTML = '';
+    micSel.innerHTML = '';
     devs.filter(d => d.kind === 'videoinput').forEach(d => {
         const o = document.createElement('option');
         o.value = d.deviceId; o.textContent = d.label || 'Kamera';
@@ -606,10 +620,15 @@ async function loadDevices() {
         o.value = d.deviceId; o.textContent = d.label || 'Mikrofon';
         micSel.appendChild(o);
     });
+    const savedCam = sessionStorage.getItem('pdp_cam_id');
+    const savedMic = sessionStorage.getItem('pdp_mic_id');
+    if (savedCam) camSel.value = savedCam;
+    if (savedMic) micSel.value = savedMic;
 }
 
 async function switchCamera(deviceId) {
     if (!deviceId) return;
+    sessionStorage.setItem('pdp_cam_id', deviceId);
     const s = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: deviceId } }, audio: false }).catch(() => null);
     if (!s) return;
     const track = s.getVideoTracks()[0];
@@ -624,6 +643,7 @@ async function switchCamera(deviceId) {
 
 async function switchMic(deviceId) {
     if (!deviceId) return;
+    sessionStorage.setItem('pdp_mic_id', deviceId);
     const s = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: { exact: deviceId } } }).catch(() => null);
     if (!s) return;
     const track = s.getAudioTracks()[0];

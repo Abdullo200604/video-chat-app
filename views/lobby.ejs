@@ -57,6 +57,19 @@
                     autofocus />
             </div>
 
+            <div class="form-group" style="display:flex; gap:10px;">
+                <div style="flex:1;">
+                    <label class="form-label">Kamera</label>
+                    <select id="lobbyCamSelect" class="form-input" style="padding:10px; font-size:14px;"
+                        onchange="switchLobbyCam(this.value)"></select>
+                </div>
+                <div style="flex:1;">
+                    <label class="form-label">Mikrofon</label>
+                    <select id="lobbyMicSelect" class="form-input" style="padding:10px; font-size:14px;"
+                        onchange="switchLobbyMic(this.value)"></select>
+                </div>
+            </div>
+
             <div id="permissionDenied" class="permission-warning hidden">
                 <i class="fas fa-exclamation-triangle"></i>
                 Kamera yoki mikrofon ruxsati rad etildi. Ism kiriting va davom eting.
@@ -80,6 +93,8 @@
         let localStream = null;
         let micEnabled = true;
         let camEnabled = true;
+        let currCamId = null;
+        let currMicId = null;
 
         // ── Get camera/mic ──────────────────────────
         async function initMedia() {
@@ -89,6 +104,7 @@
                 vid.srcObject = localStream;
                 vid.style.display = 'block';
                 document.getElementById('cameraOffState').style.display = 'none';
+                await loadLobbyDevices();
             } catch (e) {
                 document.getElementById('permissionDenied').classList.remove('hidden');
                 document.getElementById('deviceCheck').innerHTML =
@@ -97,8 +113,57 @@
             }
         }
 
+        async function loadLobbyDevices() {
+            const devs = await navigator.mediaDevices.enumerateDevices().catch(() => []);
+            const camSel = document.getElementById('lobbyCamSelect');
+            const micSel = document.getElementById('lobbyMicSelect');
+            camSel.innerHTML = '';
+            micSel.innerHTML = '';
+            devs.filter(d => d.kind === 'videoinput').forEach(d => {
+                const o = document.createElement('option');
+                o.value = d.deviceId; o.textContent = d.label || 'Kamera';
+                camSel.appendChild(o);
+                if (!currCamId) currCamId = d.deviceId;
+            });
+            devs.filter(d => d.kind === 'audioinput').forEach(d => {
+                const o = document.createElement('option');
+                o.value = d.deviceId; o.textContent = d.label || 'Mikrofon';
+                micSel.appendChild(o);
+                if (!currMicId) currMicId = d.deviceId;
+            });
+            if (currCamId) camSel.value = currCamId;
+            if (currMicId) micSel.value = currMicId;
+        }
+
+        async function switchLobbyCam(deviceId) {
+            currCamId = deviceId;
+            await restartLobbyMedia();
+        }
+
+        async function switchLobbyMic(deviceId) {
+            currMicId = deviceId;
+            await restartLobbyMedia();
+        }
+
+        async function restartLobbyMedia() {
+            if (localStream) {
+                localStream.getTracks().forEach(t => t.stop());
+            }
+            const constraints = {
+                video: camEnabled ? (currCamId ? { deviceId: { exact: currCamId } } : true) : false,
+                audio: micEnabled ? (currMicId ? { deviceId: { exact: currMicId } } : true) : false
+            };
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia(constraints);
+                const vid = document.getElementById('previewVideo');
+                vid.srcObject = localStream;
+                vid.style.display = camEnabled ? 'block' : 'none';
+            } catch (e) { }
+        }
+
         function togglePreviewMic() {
             micEnabled = !micEnabled;
+            // Always rely on track enabling/disabling instead of full restarts to be faster
             if (localStream) localStream.getAudioTracks().forEach(t => t.enabled = micEnabled);
             const btn = document.getElementById('previewMicBtn');
             btn.innerHTML = micEnabled ? '<i class="fas fa-microphone"></i>' : '<i class="fas fa-microphone-slash"></i>';
@@ -131,6 +196,8 @@
             sessionStorage.setItem('pdp_name', name);
             sessionStorage.setItem('pdp_mic', micEnabled);
             sessionStorage.setItem('pdp_cam', camEnabled);
+            sessionStorage.setItem('pdp_cam_id', currCamId || '');
+            sessionStorage.setItem('pdp_mic_id', currMicId || '');
             window.location.href = '/meeting/' + ROOM_ID;
         }
 
