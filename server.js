@@ -147,6 +147,40 @@ app.get('/meeting/:room', (req, res) => {
   res.render('room', { roomId });
 });
 
+// ── Meeting Scheduler ────────────────────────────
+const scheduledMeetings = []; // { id, title, date, createdBy, link }
+const { v4: uuidV4 } = require('uuid');
+function generateShortId() { return uuidV4().split('-')[0].toUpperCase(); }
+
+app.post('/api/schedule', (req, res) => {
+  const { title, date } = req.body;
+  if (!title || !date) return res.status(400).json({ error: 'title and date required' });
+  const roomId = generateShortId() + '-' + generateShortId();
+  const meeting = { id: roomId, title, date, createdBy: req.user?.name || 'Anonymous', link: `/lobby/${roomId}`, createdAt: Date.now() };
+  scheduledMeetings.push(meeting);
+  rooms[roomId] = {
+    host: null, accessType: 'open', theaterMode: false, chatEnabled: true,
+    startTime: new Date(date).getTime(),
+    permissions: { screenShare: true, reactions: true, participantMic: true, participantCamera: true },
+    waitingRoom: [], participants: {}
+  };
+  res.json(meeting);
+});
+
+app.get('/api/schedule', (req, res) => {
+  const upcoming = scheduledMeetings
+    .filter(m => new Date(m.date) > new Date() || Date.now() - new Date(m.date) < 60 * 60 * 1000)
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+  res.json(upcoming);
+});
+
+app.delete('/api/schedule/:id', (req, res) => {
+  const idx = scheduledMeetings.findIndex(m => m.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'Not found' });
+  scheduledMeetings.splice(idx, 1);
+  res.json({ ok: true });
+});
+
 // ── Admin Route Integration ────────────────────────
 const bannedUsers = [];
 app.use('/api/admin', adminAuth, adminRoutes(rooms, scheduledMeetings, bannedUsers, io));
