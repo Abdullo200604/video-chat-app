@@ -154,7 +154,6 @@ app.get('/meeting/:room', (req, res) => {
 
 // ── Meeting Scheduler ────────────────────────────
 const scheduledMeetings = []; // { id, title, date, createdBy, link }
-function generateShortId() { return uuidV4().split('-')[0].toUpperCase(); }
 
 app.post('/api/schedule', (req, res) => {
   const { title, date } = req.body;
