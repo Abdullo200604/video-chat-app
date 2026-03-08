@@ -147,20 +147,20 @@ app.get('/meeting/:room', (req, res) => {
   res.render('room', { roomId });
 });
 
-// Legacy direct room route
-app.get('/:room', (req, res) => {
-  const roomId = req.params.room;
-  // skip static files
-  if (roomId.includes('.')) return res.status(404).send('Not found');
-  res.redirect(`/lobby/${roomId}`);
-});
-
 // ── Admin Route Integration ────────────────────────
 const bannedUsers = [];
 app.use('/api/admin', adminAuth, adminRoutes(rooms, scheduledMeetings, bannedUsers, io));
 
 app.get('/admin', adminAuth, (req, res) => {
   res.sendFile(__dirname + '/public/admin/dashboard.html');
+});
+
+// Legacy direct room route (Catch all)
+app.get('/:room', (req, res) => {
+  const roomId = req.params.room;
+  // skip static files
+  if (roomId.includes('.')) return res.status(404).send('Not found');
+  res.redirect(`/lobby/${roomId}`);
 });
 
 // ── Socket.io ───────────────────────────────
