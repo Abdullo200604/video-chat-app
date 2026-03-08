@@ -189,7 +189,7 @@
         function saveToken() {
             token = document.getElementById('adminToken').value;
             localStorage.setItem('adminToken', token);
-            fetchData();
+            fetchData(true);
         }
 
         const api = axios.create({ baseURL: '/api/admin' });
@@ -217,7 +217,7 @@
         }
 
         // Data Fetching
-        async function fetchData() {
+        async function fetchData(isManual = false) {
             if (!token) return;
             const saveBtn = document.querySelector('.admin-auth button');
             try {
@@ -241,7 +241,7 @@
                 renderLogs(logs.data);
 
                 // Visual success queue
-                if (saveBtn) {
+                if (isManual && saveBtn) {
                     saveBtn.textContent = 'Tasdiqlandi ✓';
                     saveBtn.style.backgroundColor = '#2ecc71';
                     setTimeout(() => { saveBtn.textContent = 'Saqlash'; saveBtn.style.backgroundColor = ''; }, 2000);
