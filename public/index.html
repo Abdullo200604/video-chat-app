@@ -22,6 +22,7 @@
             <span>PDP <strong>Chat</strong></span>
         </a>
         <div class="nav-actions" id="navActions">
+            <a class="btn-random-nav" href="/random">🎲 Random Chat</a>
             <button class="btn-text" onclick="window.location.href='/auth/google'">Kirish</button>
             <button class="btn-primary-sm" onclick="openModal()">Majlis boshlash</button>
         </div>
@@ -43,6 +44,10 @@
                     <i class="fas fa-plus"></i>
                     Yangi majlis
                 </button>
+                <a class="btn-random-lg" href="/random">
+                    <i class="fas fa-random"></i>
+                    🎲 Random Chat
+                </a>
                 <div class="join-form">
                     <input type="text" id="joinCodeInput" placeholder="Kod yoki havola yozing" />
                     <button class="btn-join" onclick="joinByCode()">Qo'shilish</button>
@@ -108,6 +113,15 @@
             <h3>Ekran ulashish</h3>
             <p>Ekraningizni ishtirokchilar bilan bo'ling</p>
         </div>
+        <div class="feature-card" id="randomFeatureCard" onclick="window.location.href='/random'"
+            style="cursor:pointer;">
+            <div class="feature-icon"
+                style="background:linear-gradient(135deg,rgba(147,51,234,.15),rgba(26,115,232,.15))"><i
+                    class="fas fa-random" style="color:#9333ea"></i>
+            </div>
+            <h3>🎲 Random Rooms</h3>
+            <p>Tasodifiy odam bilan suhbat yoki jamoat xonalariga qo'shiling</p>
+        </div>
     </section>
 
     <!-- ── MODAL ── -->
@@ -133,6 +147,17 @@
                 <div class="option-text">
                     <strong>Hozir majlis boshlash</strong>
                     <span>Darhol xonaga kiring va boshqalarni taklif qiling</span>
+                </div>
+                <i class="fas fa-chevron-right option-arrow"></i>
+            </button>
+            <button class="modal-option" onclick="window.location.href='/random'">
+                <div class="option-icon"
+                    style="background:linear-gradient(135deg,rgba(147,51,234,.12),rgba(26,115,232,.12))"><i
+                        class="fas fa-random" style="color:#9333ea"></i>
+                </div>
+                <div class="option-text">
+                    <strong>🎲 Random Chat</strong>
+                    <span>Tasodifiy odam bilan 1-on-1 video suhbat</span>
                 </div>
                 <i class="fas fa-chevron-right option-arrow"></i>
             </button>

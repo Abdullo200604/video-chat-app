@@ -136,6 +136,59 @@ body {
     transform: translateY(0);
 }
 
+/* ── Random Chat buttons ─────────────────── */
+.btn-random-nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, rgba(147, 51, 234, .12), rgba(26, 115, 232, .12));
+    color: #7c3aed;
+    border: 1px solid rgba(147, 51, 234, .25);
+    padding: 7px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all .2s;
+    white-space: nowrap;
+}
+
+.btn-random-nav:hover {
+    background: linear-gradient(135deg, rgba(147, 51, 234, .22), rgba(26, 115, 232, .22));
+    border-color: rgba(147, 51, 234, .5);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(147, 51, 234, .2);
+}
+
+.btn-random-lg {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, #9333ea, #1a73e8);
+    color: #fff;
+    border: none;
+    padding: 14px 28px;
+    border-radius: 24px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all .2s;
+    white-space: nowrap;
+    box-shadow: 0 4px 16px rgba(147, 51, 234, .35);
+}
+
+.btn-random-lg:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(147, 51, 234, .45);
+}
+
+.btn-random-lg:active {
+    transform: translateY(0);
+}
+
+
 .btn-google-hero {
     display: flex;
     align-items: center;
