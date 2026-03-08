@@ -1145,3 +1145,120 @@ setInterval(async () => {
         }
     } catch (e) { /* ignore */ }
 }, 5000);
+
+// ══════════════════════════════════════════════════
+// ── MULTIPLAYER GAMES ─────────────────────────────
+// ══════════════════════════════════════════════════
+let activeGame = null;
+let gameBoard = Array(9).fill(null);
+let mySymbol = null; // 'X' or 'O'
+let currentTurn = 'X';
+
+function launchGame(gameType) {
+    if (gameType === 'tictactoe') {
+        socket.emit('game-launch', { gameType: 'tictactoe' });
+    }
+}
+
+socket.on('game-started', ({ gameType, startedBy }) => {
+    showToast(`🎮 ${startedBy} ${gameType} o'yinini boshladi!`);
+    if (gameType === 'tictactoe') {
+        initTicTacToeUI();
+    }
+});
+
+function initTicTacToeUI() {
+    const dashboard = document.getElementById('gamesDashboard');
+    const area = document.getElementById('activeGameArea');
+    dashboard.classList.add('hidden');
+    area.classList.remove('hidden');
+
+    area.innerHTML = `
+        <div class="game-status" id="gameStatus">Navbat: X</div>
+        <div class="ttt-game-board" id="tttBoard">
+            ${Array(9).fill(0).map((_, i) => `<div class="ttt-cell" data-index="${i}"></div>`).join('')}
+        </div>
+        <button class="btn-game-action btn-back-lobby" onclick="exitGame()">Chiqish</button>
+        <button class="btn-game-action" onclick="resetGame()">Qayta boshlash</button>
+    `;
+
+    document.querySelectorAll('.ttt-cell').forEach(cell => {
+        cell.onclick = () => handleGameMove(cell.dataset.index);
+    });
+
+    // Reset state
+    gameBoard = Array(9).fill(null);
+    currentTurn = 'X';
+}
+
+function handleGameMove(index) {
+    if (gameBoard[index] || calculateWinner(gameBoard)) return;
+
+    // In a simple p2p approach, first person who moves is X
+    const moveData = { index, symbol: currentTurn };
+    socket.emit('game-move', moveData);
+
+    applyMove(index, currentTurn);
+}
+
+socket.on('game-remote-move', ({ index, symbol }) => {
+    applyMove(index, symbol);
+});
+
+function applyMove(index, symbol) {
+    gameBoard[index] = symbol;
+    const cells = document.querySelectorAll('.ttt-cell');
+    const cell = cells[index];
+    cell.textContent = symbol;
+    cell.classList.add('occupied', symbol.toLowerCase());
+
+    currentTurn = (symbol === 'X') ? 'O' : 'X';
+    const status = document.getElementById('gameStatus');
+
+    const winner = calculateWinner(gameBoard);
+    if (status) {
+        if (winner) {
+            status.textContent = `G'alaba: ${winner}!`;
+            showToast(`🎉 ${winner} o'yinda g'alaba qozondi!`);
+        } else if (!gameBoard.includes(null)) {
+            status.textContent = "Durang!";
+        } else {
+            status.textContent = `Navbat: ${currentTurn}`;
+        }
+    }
+}
+
+function resetGame() {
+    socket.emit('game-reset');
+}
+
+socket.on('game-reset-all', () => {
+    gameBoard = Array(9).fill(null);
+    currentTurn = 'X';
+    document.querySelectorAll('.ttt-cell').forEach(c => {
+        c.textContent = '';
+        c.className = 'ttt-cell';
+    });
+    const status = document.getElementById('gameStatus');
+    if (status) status.textContent = "Navbat: X";
+});
+
+function exitGame() {
+    document.getElementById('gamesDashboard').classList.remove('hidden');
+    document.getElementById('activeGameArea').classList.add('hidden');
+}
+
+function calculateWinner(squares) {
+    const lines = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8], // rows
+        [0, 3, 6], [1, 4, 7], [2, 5, 8], // cols
+        [0, 4, 8], [2, 4, 6]             // diags
+    ];
+    for (let i = 0; i < lines.length; i++) {
+        const [a, b, c] = lines[i];
+        if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
+            return squares[a];
+        }
+    }
+    return null;
+}

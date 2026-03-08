@@ -448,6 +448,18 @@ io.on('connection', socket => {
       io.to(roomId).emit('room-lock-status', locked);
     });
 
+    socket.on('game-launch', ({ gameType }) => {
+      io.to(roomId).emit('game-started', { gameType, startedBy: currentName });
+    });
+
+    socket.on('game-move', (moveData) => {
+      socket.to(roomId).emit('game-remote-move', moveData);
+    });
+
+    socket.on('game-reset', () => {
+      io.to(roomId).emit('game-reset-all');
+    });
+
     socket.on('disconnect', () => {
       if (adminRouter && adminRouter.addLog) adminRouter.addLog(`User ${currentName} (${userId}) left room ${roomId}`);
       if (!rooms[roomId]) return;

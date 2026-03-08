@@ -1,0 +1,124 @@
+/* ════ GAMES PANEL STYLES ════ */
+.games-container {
+    padding: 20px;
+    height: calc(100% - 60px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.game-launcher-card {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid #e0e0e0;
+    margin-bottom: 12px;
+}
+
+.game-launcher-card:hover {
+    background: #eef2ff;
+    border-color: var(--blue);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(26, 115, 232, 0.1);
+}
+
+.game-icon {
+    width: 48px;
+    height: 48px;
+    background: white;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: var(--blue);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.game-info strong {
+    display: block;
+    font-size: 15px;
+    color: #202124;
+}
+
+.game-info span {
+    font-size: 12px;
+    color: #5f6368;
+}
+
+/* ── Tic-Tac-Toe Grid ── */
+.ttt-game-board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 20px auto;
+    max-width: 260px;
+    background: #dadce0;
+    padding: 10px;
+    border-radius: 12px;
+}
+
+.ttt-cell {
+    aspect-ratio: 1;
+    background: white;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.ttt-cell:hover:not(.occupied) {
+    background: #f1f3f4;
+}
+
+.ttt-cell.occupied {
+    cursor: default;
+}
+
+.ttt-cell.x {
+    color: var(--ea4335);
+}
+
+.ttt-cell.o {
+    color: var(--blue);
+}
+
+.game-status {
+    text-align: center;
+    margin: 15px 0;
+    font-weight: 500;
+    padding: 10px;
+    border-radius: 8px;
+    background: #f1f3f4;
+}
+
+.btn-game-action {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    background: var(--blue);
+    color: white;
+    margin-top: 10px;
+}
+
+.btn-game-action:hover {
+    opacity: 0.9;
+}
+
+.btn-back-lobby {
+    background: #f1f3f4;
+    color: #202124;
+}
