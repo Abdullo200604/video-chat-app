@@ -373,6 +373,7 @@ function togglePanel(name) {
         el.classList.add('open');
         const btn = document.getElementById(name + 'Btn') || document.getElementById('host' + (name === 'host' ? 'PanelBtn' : ''));
         btn?.classList.add('active-panel');
+        if (name === 'settings') loadDevices();
     }
 
     if (name === 'chat') {
@@ -632,13 +633,18 @@ async function switchCamera(deviceId) {
     const s = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: deviceId } }, audio: false }).catch(() => null);
     if (!s) return;
     const track = s.getVideoTracks()[0];
+    track.enabled = camOn; // Inherit current state
     myStream.getVideoTracks().forEach(t => { t.stop(); myStream.removeTrack(t); });
     myStream.addTrack(track);
     Object.values(peers).forEach(call => {
         const sender = call.peerConnection?.getSenders().find(s => s.track?.kind === 'video');
         if (sender) sender.replaceTrack(track);
     });
-    if (tiles['me']) tiles['me'].querySelector('video').srcObject = myStream;
+    // If virtual blur is on, it might need to re-attach (though CSS-based blur is fine)
+    if (tiles['me']) {
+        const v = tiles['me'].querySelector('video');
+        if (v) v.srcObject = myStream;
+    }
 }
 
 async function switchMic(deviceId) {
@@ -647,6 +653,7 @@ async function switchMic(deviceId) {
     const s = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: { exact: deviceId } } }).catch(() => null);
     if (!s) return;
     const track = s.getAudioTracks()[0];
+    track.enabled = micOn; // Inherit current state
     myStream.getAudioTracks().forEach(t => { t.stop(); myStream.removeTrack(t); });
     myStream.addTrack(track);
     Object.values(peers).forEach(call => {
