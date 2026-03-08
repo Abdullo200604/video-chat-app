@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDP Chat — Random Rooms</title>
+    <meta name="description" content="Tasodifiy odamlar bilan video suhbat yoki jamoat xonalariga qo'shiling.">
+    <link rel="stylesheet" href="/css/random.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+
+<body>
+
+    <!-- ── Animated BG ──────────────────────────────── -->
+    <div class="bg-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <!-- ── NAV ─────────────────────────────────────── -->
+    <nav>
+        <a href="/" class="nav-brand">
+            <img src="/logo.png" alt="PDP Chat">
+            <span>PDP <strong>Chat</strong></span>
+        </a>
+        <span class="nav-badge">Random</span>
+        <div class="online-count">
+            <span class="pulse"></span>
+            <span><span id="onlineCount">1</span> online</span>
+        </div>
+    </nav>
+
+    <!-- ── HERO ─────────────────────────────────────── -->
+    <section class="hero">
+        <h1>Random Rooms</h1>
+        <p>Yangi odamlar bilan tanishing — 1 bosish bilan video suhbat yoki jamoat xonasiga qo'shiling.</p>
+
+        <div class="mode-cards">
+            <!-- 1-on-1 -->
+            <div class="mode-card" id="privateCard" onclick="switchMode('private')">
+                <span class="icon">🎲</span>
+                <h3>Random Chat</h3>
+                <p>Tasodifiy biror kishi bilan 1-on-1 video suhbat. Omegle uslubi.</p>
+            </div>
+
+            <!-- Public Rooms -->
+            <div class="mode-card" id="publicCard" onclick="switchMode('public')">
+                <span class="icon">👥</span>
+                <h3>Jamoat Xonalari</h3>
+                <p>Ochiq xonalar ro'yxati — yarating yoki qo'shiling.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════
+     SECTION A — PRIVATE 1-on-1 MATCHMAKING
+═══════════════════════════════════════════════════ -->
+    <div class="section" id="privateSection">
+        <div class="match-card">
+
+            <!-- IDLE STATE (initial / after cancel) -->
+            <div id="idleState">
+                <!-- Interest Tags -->
+                <div class="interests-wrap">
+                    <label><i class="fas fa-tag"></i> Qiziqishlaringizni tanlang (ixtiyoriy)</label>
+                    <div class="tag-options">
+                        <span class="tag" onclick="toggleTag(this,'coding')">💻 Dasturlash</span>
+                        <span class="tag" onclick="toggleTag(this,'english')">🇬🇧 Inglizcha</span>
+                        <span class="tag" onclick="toggleTag(this,'movies')">🎬 Kinolar</span>
+                        <span class="tag" onclick="toggleTag(this,'gaming')">🎮 O'yinlar</span>
+                        <span class="tag" onclick="toggleTag(this,'music')">🎵 Musiqa</span>
+                        <span class="tag" onclick="toggleTag(this,'startup')">🚀 Startuplar</span>
+                        <span class="tag" onclick="toggleTag(this,'design')">🎨 Dizayn</span>
+                        <span class="tag" onclick="toggleTag(this,'science')">🔬 Fan</span>
+                    </div>
+                </div>
+
+                <button class="btn-primary" onclick="startSearch()" id="startBtn">
+                    <i class="fas fa-random"></i> Hamkor Topish
+                </button>
+            </div>
+
+            <!-- SEARCHING STATE -->
+            <div id="searchingState" style="display:none; flex-direction:column; align-items:center;">
+                <div class="loader-ring"></div>
+                <div class="searching-text">Hamkor qidirilmoqda<span id="searchDots">...</span></div>
+                <div class="searching-sub" id="searchSub">Kutib turing...</div>
+                <button class="btn-secondary" onclick="cancelSearch()">
+                    <i class="fas fa-times"></i> Bekor Qilish
+                </button>
+            </div>
+
+            <!-- MATCH FOUND STATE -->
+            <div id="matchFoundState" style="display:none; flex-direction:column; align-items:center;">
+                <div style="font-size:48px; margin-bottom:12px;">🎉</div>
+                <div class="searching-text" style="color:#52a860">Hamkor topildi!</div>
+                <div class="searching-sub">
+                    <strong id="partnerNameDisplay"></strong> bilan ulanmoqda...
+                </div>
+                <div class="loader-ring" style="width:40px;height:40px;border-width:3px;margin:16px auto;"></div>
+                <button class="btn-next" onclick="nextPartner()">
+                    ⏭ Keyingisi
+                </button>
+            </div>
+
+        </div><!-- /.match-card -->
+    </div><!-- /#privateSection -->
+
+    <!-- ═══════════════════════════════════════════════
+     SECTION B — PUBLIC ROOMS
+═══════════════════════════════════════════════════ -->
+    <div class="section" id="publicSection">
+        <div class="pub-header">
+            <h2>🌐 Jamoat Xonalari</h2>
+            <div style="display:flex; gap:10px;">
+                <button class="btn-secondary" onclick="socket.emit('random:list_rooms')">
+                    <i class="fas fa-sync-alt"></i> Yangilash
+                </button>
+                <button class="btn-primary" onclick="openModal()">
+                    <i class="fas fa-plus"></i> Xona Yaratish
+                </button>
+            </div>
+        </div>
+
+        <!-- Rooms list (populated by JS) -->
+        <div class="rooms-list" id="roomsList">
+            <div class="empty-state">
+                <div class="empty-icon">🔍</div>
+                <p>Xonalar yuklanmoqda...</p>
+            </div>
+        </div>
+    </div><!-- /#publicSection -->
+
+    <!-- ═══════════════════════════════════════════════
+     MODAL — CREATE PUBLIC ROOM
+═══════════════════════════════════════════════════ -->
+    <div class="modal-backdrop" id="createModal" onclick="e => e.target===this && closeModal()">
+        <div class="modal" onclick="event.stopPropagation()">
+            <h3>🏠 Yangi Xona Yaratish</h3>
+
+            <div class="form-group">
+                <label>Xona nomi</label>
+                <input type="text" id="newRoomName" class="form-input" placeholder="Masalan: Dasturchilar Klubi"
+                    maxlength="40">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Max ishtirokchilar</label>
+                    <input type="number" id="newRoomMax" class="form-input" value="10" min="2" max="30">
+                </div>
+                <div class="form-group">
+                    <label>Parol (ixtiyoriy)</label>
+                    <input type="password" id="newRoomPw" class="form-input" placeholder="Maxfiy qilish uchun">
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeModal()">Bekor</button>
+                <button class="btn-primary" onclick="createRoom()">
+                    <i class="fas fa-plus"></i> Yaratish
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════
+     MODAL — PASSWORD PROMPT
+═══════════════════════════════════════════════════ -->
+    <div class="modal-backdrop" id="pwModal">
+        <div class="modal" onclick="event.stopPropagation()">
+            <h3>🔒 Parol Kiriting</h3>
+            <div class="form-group">
+                <label>Xona paroli</label>
+                <input type="password" id="pwInput" class="form-input" placeholder="••••••••"
+                    onkeydown="if(event.key==='Enter')confirmPwJoin()">
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closePwModal()">Bekor</button>
+                <button class="btn-primary" onclick="confirmPwJoin()">
+                    <i class="fas fa-sign-in-alt"></i> Kirish
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Toast ─────────────────────────────────────── -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- ── Scripts ───────────────────────────────────── -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/random.js"></script>
+
+</body>
+
+</html>

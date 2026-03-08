@@ -7,6 +7,7 @@ require('dotenv').config();
 
 const adminAuth = require('./server/middleware/adminAuth');
 const adminRoutes = require('./server/routes/adminRoutes');
+const { registerRandomSocket } = require('./server/sockets/randomSocket');
 
 const app = express();
 app.set('trust proxy', 1); // For Render.com HTTPS
@@ -199,6 +200,11 @@ app.get('/admin/:token', (req, res) => {
   res.redirect('/admin?token=' + tokenParams);
 });
 
+// ── Random Rooms page ─────────────────────────────────
+app.get('/random', (req, res) => {
+  res.sendFile(__dirname + '/public/random.html');
+});
+
 // Legacy direct room route (Catch all)
 app.get('/:room', (req, res) => {
   const roomId = req.params.room;
@@ -208,6 +214,9 @@ app.get('/:room', (req, res) => {
 });
 
 // ── Socket.io ───────────────────────────────
+// Register random room socket handler BEFORE main join-room
+registerRandomSocket(io, rooms);
+
 io.on('connection', socket => {
   let currentRoomId = null;
   let currentUserId = null;
