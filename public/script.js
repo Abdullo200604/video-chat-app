@@ -344,6 +344,9 @@ function addTile(stream, peerId, name, isMe) {
             <i class="fas fa-expand"></i>
         </button>
     `;
+    tile.appendChild(vid);
+    tile.appendChild(avatar);
+    tile.appendChild(info);
     tile.appendChild(ctrls);
 
     tile.addEventListener('dblclick', () => enterFocusMode(peerId));
@@ -521,7 +524,7 @@ function addChatMessage({ text, name, uid }) {
 }
 
 // ── PANELS ───────────────────────────────────────
-const panels = { chat: 'chatPanel', participants: 'participantsPanel', host: 'hostPanel', settings: 'settingsPanel', effects: 'effectsPanel' };
+const panels = { chat: 'chatPanel', participants: 'participantsPanel', host: 'hostPanel', settings: 'settingsPanel', effects: 'effectsPanel', games: 'gamesPanel' };
 
 function togglePanel(name) {
     const el = document.getElementById(panels[name]);
@@ -1184,6 +1187,12 @@ socket.on('game-started', ({ gameType, startedBy }) => {
     if (gameType === 'snake') initSnakeUI();
     if (gameType === 'ludo') initLudoUI();
     if (gameType === 'battleship') initBattleshipUI();
+
+    // Auto-open games panel if not already open
+    const gp = document.getElementById('gamesPanel');
+    if (gp && !gp.classList.contains('open')) {
+        togglePanel('games');
+    }
 });
 
 function initTicTacToeUI() {
