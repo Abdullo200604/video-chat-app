@@ -52,6 +52,7 @@ if (!persistentId) {
     localStorage.setItem('pdp_user_id', persistentId);
 }
 let myRole = 'player'; // player | spectator
+let activeGame = null;
 
 const effectFilters = {
     none: '',
@@ -1168,7 +1169,6 @@ setInterval(async () => {
 // ══════════════════════════════════════════════════
 // ── MULTIPLAYER GAMES ─────────────────────────────
 // ══════════════════════════════════════════════════
-let activeGame = null;
 let gameBoard = Array(9).fill(null);
 let mySymbol = null; // 'X' or 'O'
 let currentTurn = 'X';
