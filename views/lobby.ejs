@@ -215,7 +215,7 @@
             sessionStorage.setItem('pdp_cam', camEnabled);
             sessionStorage.setItem('pdp_cam_id', currCamId || '');
             sessionStorage.setItem('pdp_mic_id', currMicId || '');
-            window.location.href = '/meeting/' + ROOM_ID;
+            window.location.href = '/meeting/' + ROOM_ID + window.location.search;
         });
 
         socket.on('join-denied', () => {
@@ -231,7 +231,6 @@
 
         // ── Boot ────────────────────────────────────
         initMedia();
-        checkAuth();
 
         // Overwrite joinMeeting for Knocking support
         function joinMeeting() {

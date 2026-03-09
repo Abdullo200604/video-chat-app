@@ -153,6 +153,15 @@ socket.on('room-state', state => {
     }
 
     if (state.theaterMode) { theaterActive = true; enterTheaterUI(); }
+
+    // Auto-launch game if suggested in URL (Host only)
+    const urlParams = new URLSearchParams(window.location.search);
+    const autoGame = urlParams.get('game');
+    if (autoGame && isHost) {
+        setTimeout(() => {
+            if (activeGame !== autoGame) launchGame(autoGame);
+        }, 1500);
+    }
 });
 
 function initPrivateSession() {

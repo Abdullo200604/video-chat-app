@@ -305,6 +305,9 @@ io.on('connection', socket => {
       }
     }
 
+    // If we get here, they are allowed to join (open room or host or already approved)
+    socket.emit('join-approved');
+
     // Room Lock check
     if (room.locked && room.host !== userId && !room.participants[userId]) {
       socket.emit('force-kick', 'Majlis qulflangan. Kirish imkonsiz.');
