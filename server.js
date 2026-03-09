@@ -181,7 +181,6 @@ app.get('/meeting/:room', (req, res) => {
 });
 
 // ── Meeting Scheduler ────────────────────────────
-const scheduledMeetings = []; // { id, title, date, createdBy, link }
 
 app.post('/api/schedule', (req, res) => {
   const { title, date } = req.body;
