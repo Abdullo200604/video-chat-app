@@ -1155,31 +1155,35 @@ let mySymbol = null; // 'X' or 'O'
 let currentTurn = 'X';
 
 function launchGame(gameType) {
-    if (gameType === 'tictactoe') {
-        socket.emit('game-launch', { gameType: 'tictactoe' });
-    }
+    socket.emit('game-launch', { gameType });
 }
 
 socket.on('game-started', ({ gameType, startedBy }) => {
-    showToast(`🎮 ${startedBy} ${gameType} o'yinini boshladi!`);
-    if (gameType === 'tictactoe') {
-        initTicTacToeUI();
-    }
+    showToast(`🎮 ${startedBy} ${gameType === 'tictactoe' ? 'Tic-Tac-Toe' : (gameType === 'rps' ? 'Tosh-Qaychi-Qogoz' : (gameType === 'snake' ? 'Iloncha' : 'Shaxmat'))} o'yinini boshladi!`);
+    if (gameType === 'tictactoe') initTicTacToeUI();
+    if (gameType === 'rps') initRPSUI();
+    if (gameType === 'snake') initSnakeUI();
 });
 
 function initTicTacToeUI() {
+    activeGame = 'tictactoe';
     const dashboard = document.getElementById('gamesDashboard');
     const area = document.getElementById('activeGameArea');
-    dashboard.classList.add('hidden');
-    area.classList.remove('hidden');
+    if (dashboard) dashboard.classList.add('hidden');
+    if (area) area.classList.remove('hidden');
 
     area.innerHTML = `
-        <div class="game-status" id="gameStatus">Navbat: X</div>
+        <div class="game-header">
+            <h3>Tic-Tac-Toe</h3>
+            <div class="game-status" id="gameStatus">Navbat: X</div>
+        </div>
         <div class="ttt-game-board" id="tttBoard">
             ${Array(9).fill(0).map((_, i) => `<div class="ttt-cell" data-index="${i}"></div>`).join('')}
         </div>
-        <button class="btn-game-action btn-back-lobby" onclick="exitGame()">Chiqish</button>
-        <button class="btn-game-action" onclick="resetGame()">Qayta boshlash</button>
+        <div class="game-actions">
+            <button class="btn-game-action btn-back-lobby" onclick="exitGame()">Chiqish</button>
+            <button class="btn-game-action" onclick="resetGame()">Qayta boshlash</button>
+        </div>
     `;
 
     document.querySelectorAll('.ttt-cell').forEach(cell => {
@@ -1192,17 +1196,355 @@ function initTicTacToeUI() {
 }
 
 function handleGameMove(index) {
-    if (gameBoard[index] || calculateWinner(gameBoard)) return;
-
-    // In a simple p2p approach, first person who moves is X
-    const moveData = { index, symbol: currentTurn };
-    socket.emit('game-move', moveData);
-
-    applyMove(index, currentTurn);
+    if (activeGame === 'tictactoe') {
+        if (gameBoard[index] || calculateWinner(gameBoard)) return;
+        socket.emit('game-move', { index, symbol: currentTurn, gameType: 'tictactoe' });
+        applyMove(index, currentTurn);
+    }
 }
 
-socket.on('game-remote-move', ({ index, symbol }) => {
-    applyMove(index, symbol);
+socket.on('game-remote-move', (data) => {
+    if (data.gameType === 'tictactoe') applyMove(data.index, data.symbol);
+    if (data.gameType === 'rps') handleRemoteRPSMove(data);
+    if (data.gameType === 'snake') handleRemoteSnakeMove(data);
+});
+
+// ── ROCK PAPER SCISSORS ───────────────────────────
+let rpsChoices = {}; // { uid: choice }
+
+function initRPSUI() {
+    activeGame = 'rps';
+    const area = document.getElementById('activeGameArea');
+    document.getElementById('gamesDashboard').classList.add('hidden');
+    area.classList.remove('hidden');
+
+    area.innerHTML = `
+        <div class="game-header">
+            <h3>Tosh, Qaychi, Qog'oz</h3>
+            <div class="game-status" id="gameStatus">Tanlang...</div>
+        </div>
+        <div class="rps-board">
+            <button class="rps-btn" onclick="sendRPSMove('rock')">🪨 Tosh</button>
+            <button class="rps-btn" onclick="sendRPSMove('paper')">📄 Qog'oz</button>
+            <button class="rps-btn" onclick="sendRPSMove('scissors')">✂️ Qaychi</button>
+        </div>
+        <div class="rps-result hidden" id="rpsResult"></div>
+        <div class="game-actions">
+            <button class="btn-game-action btn-back-lobby" onclick="exitGame()">Chiqish</button>
+            <button class="btn-game-action" onclick="resetRPS()">Qayta boshlash</button>
+        </div>
+    `;
+    rpsChoices = {};
+}
+
+function sendRPSMove(choice) {
+    if (rpsChoices[myPeerId]) return;
+    rpsChoices[myPeerId] = choice;
+    socket.emit('game-move', { choice, uid: myPeerId, gameType: 'rps' });
+    document.getElementById('gameStatus').textContent = 'Raqib kutilmoqda...';
+    checkRPSWinner();
+}
+
+function handleRemoteRPSMove(data) {
+    rpsChoices[data.uid] = data.choice;
+    checkRPSWinner();
+}
+
+function checkRPSWinner() {
+    const uids = Object.keys(rpsChoices);
+    const peerUids = Object.keys(participants).filter(id => id !== myPeerId);
+
+    // In RPS we need at least 2 players to have moved
+    if (uids.length < 2) return;
+
+    const myChoice = rpsChoices[myPeerId];
+    const opponentId = uids.find(id => id !== myPeerId);
+    const opponentChoice = rpsChoices[opponentId];
+    const opponentName = participants[opponentId]?.name || 'Raqib';
+
+    let result = '';
+    if (myChoice === opponentChoice) result = 'Durang! 🤝';
+    else if (
+        (myChoice === 'rock' && opponentChoice === 'scissors') ||
+        (myChoice === 'paper' && opponentChoice === 'rock') ||
+        (myChoice === 'scissors' && opponentChoice === 'paper')
+    ) result = 'Siz g\'alaba qozondingiz! 🎉';
+    else result = `${opponentName} g'alaba qozondi! 😢`;
+
+    const resEl = document.getElementById('rpsResult');
+    resEl.innerHTML = `
+        <div class="rps-showdown">
+            <span>Siz: ${getRPSEmoji(myChoice)}</span>
+            <span>vs</span>
+            <span>${opponentName}: ${getRPSEmoji(opponentChoice)}</span>
+        </div>
+        <div class="rps-final-msg">${result}</div>
+    `;
+    resEl.classList.remove('hidden');
+    document.getElementById('gameStatus').textContent = 'O\'yin tugadi';
+}
+
+function getRPSEmoji(choice) {
+    return choice === 'rock' ? '🪨' : choice === 'paper' ? '📄' : '✂️';
+}
+
+function resetRPS() {
+    socket.emit('game-reset', { gameType: 'rps' });
+}
+
+socket.on('game-reset-all', (data) => {
+    if (data && data.gameType === 'rps') initRPSUI();
+    else if (data && data.gameType === 'snake') initSnakeUI();
+    else {
+        // Default Tictactoe reset
+        gameBoard = Array(9).fill(null);
+        currentTurn = 'X';
+        document.querySelectorAll('.ttt-cell').forEach(c => {
+            c.textContent = '';
+            c.className = 'ttt-cell';
+        });
+        const status = document.getElementById('gameStatus');
+        if (status) status.textContent = "Navbat: X";
+    }
+});
+
+// ── MULTIPLAYER SNAKE ─────────────────────────────
+let snakeCanvas, snakeCtx;
+let snakeGameState = {
+    snakes: {}, // { uid: [{x,y}, ...] }
+    food: { x: 5, y: 5 },
+    gridSize: 20,
+    tileCount: 20,
+    gameLoop: null,
+    score: 0
+};
+
+function initSnakeUI() {
+    activeGame = 'snake';
+    const area = document.getElementById('activeGameArea');
+    document.getElementById('gamesDashboard').classList.add('hidden');
+    area.classList.remove('hidden');
+
+    area.innerHTML = `
+        <div class="game-header">
+            <h3>Iloncha</h3>
+            <div class="game-status" id="gameStatus">Ochko: 0</div>
+        </div>
+        <div class="snake-container">
+            <canvas id="snakeCanvas" width="300" height="300"></canvas>
+        </div>
+        <div class="game-actions">
+            <button class="btn-game-action btn-back-lobby" onclick="exitGame()">Chiqish</button>
+            <button class="btn-game-action" onclick="resetSnake()">Qayta boshlash</button>
+        </div>
+    `;
+
+    snakeCanvas = document.getElementById('snakeCanvas');
+    snakeCtx = snakeCanvas.getContext('2d');
+
+    // Reset state
+    snakeGameState.snakes = {};
+    snakeGameState.snakes[myPeerId] = [{ x: 10, y: 10 }];
+    snakeGameState.score = 0;
+    snakeGameState.direction = { x: 0, y: 0 };
+    snakeGameState.nextDir = { x: 0, y: 0 };
+
+    if (snakeGameState.gameLoop) clearInterval(snakeGameState.gameLoop);
+    snakeGameState.gameLoop = setInterval(updateSnake, 150);
+
+    window.addEventListener('keydown', handleSnakeKey);
+}
+
+function handleSnakeKey(e) {
+    if (activeGame !== 'snake') return;
+    const key = e.key;
+    const { direction } = snakeGameState;
+    if (key === 'ArrowUp' && direction.y === 0) snakeGameState.nextDir = { x: 0, y: -1 };
+    if (key === 'ArrowDown' && direction.y === 0) snakeGameState.nextDir = { x: 0, y: 1 };
+    if (key === 'ArrowLeft' && direction.x === 0) snakeGameState.nextDir = { x: -1, y: 0 };
+    if (key === 'ArrowRight' && direction.x === 0) snakeGameState.nextDir = { x: 1, y: 0 };
+
+    socket.emit('game-move', {
+        uid: myPeerId,
+        gameType: 'snake',
+        type: 'dir',
+        dir: snakeGameState.nextDir
+    });
+}
+
+function handleRemoteSnakeMove(data) {
+    if (data.type === 'dir') {
+        if (!snakeGameState.snakes[data.uid]) snakeGameState.snakes[data.uid] = [{ x: 5, y: 5 }];
+        // Just track current position from remote, but for simplicity in this p2p version, 
+        // we'll just let each client simulate their own snake and broadcast tail.
+    }
+    if (data.type === 'pos') {
+        snakeGameState.snakes[data.uid] = data.snake;
+    }
+}
+
+function updateSnake() {
+    snakeGameState.direction = snakeGameState.nextDir;
+    const head = {
+        x: snakeGameState.snakes[myPeerId][0].x + snakeGameState.direction.x,
+        y: snakeGameState.snakes[myPeerId][0].y + snakeGameState.direction.y
+    };
+
+    // Wall collision
+    if (head.x < 0) head.x = 14;
+    if (head.x >= 15) head.x = 0;
+    if (head.y < 0) head.y = 14;
+    if (head.y >= 15) head.y = 0;
+
+    snakeGameState.snakes[myPeerId].unshift(head);
+
+    // Food collision
+    if (head.x === snakeGameState.food.x && head.y === snakeGameState.food.y) {
+        snakeGameState.score += 10;
+        document.getElementById('gameStatus').textContent = `Ochko: ${snakeGameState.score}`;
+        snakeGameState.food = {
+            x: Math.floor(Math.random() * 15),
+            y: Math.floor(Math.random() * 15)
+        };
+    } else {
+        if (snakeGameState.direction.x !== 0 || snakeGameState.direction.y !== 0) {
+            snakeGameState.snakes[myPeerId].pop();
+        }
+    }
+
+    // Broadcast position
+    socket.emit('game-move', {
+        uid: myPeerId,
+        gameType: 'snake',
+        type: 'pos',
+        snake: snakeGameState.snakes[myPeerId]
+    });
+
+    drawSnake();
+}
+
+function drawSnake() {
+    snakeCtx.fillStyle = '#0f172a';
+    snakeCtx.fillRect(0, 0, snakeCanvas.width, snakeCanvas.height);
+
+    // Draw Food
+    snakeCtx.fillStyle = '#ef4444';
+    snakeCtx.fillRect(snakeGameState.food.x * 20, snakeGameState.food.y * 20, 18, 18);
+
+    // Draw Snakes
+    Object.entries(snakeGameState.snakes).forEach(([uid, snake]) => {
+        snakeCtx.fillStyle = uid === myPeerId ? '#10b981' : '#6366f1';
+        snake.forEach(part => {
+            snakeCtx.fillRect(part.x * 20, part.y * 20, 18, 18);
+        });
+    });
+}
+
+function resetSnake() {
+    socket.emit('game-reset', { gameType: 'snake' });
+}
+
+// ── SIMPLE CHESS ──────────────────────────────────
+let selectedPiece = null;
+let chessBoard = []; // 8x8
+
+function initChessUI() {
+    activeGame = 'chess';
+    const area = document.getElementById('activeGameArea');
+    document.getElementById('gamesDashboard').classList.add('hidden');
+    area.classList.remove('hidden');
+
+    area.innerHTML = `
+        <div class="game-header">
+            <h3>Sodda Shaxmat</h3>
+            <div class="game-status" id="gameStatus">Oqlar yuradi</div>
+        </div>
+        <div class="chess-container" id="chessBoard">
+            ${renderChessBoard()}
+        </div>
+        <div class="game-actions">
+            <button class="btn-game-action btn-back-lobby" onclick="exitGame()">Chiqish</button>
+            <button class="btn-game-action" onclick="resetChess()">Qayta boshlash</button>
+        </div>
+    `;
+
+    setupChessState();
+}
+
+function setupChessState() {
+    chessBoard = Array(8).fill(null).map(() => Array(8).fill(null));
+    // Simple setup: just kings and some pawns for demo
+    chessBoard[0][4] = { type: 'k', color: 'b' };
+    chessBoard[7][4] = { type: 'k', color: 'w' };
+    chessBoard[1][4] = { type: 'p', color: 'b' };
+    chessBoard[6][4] = { type: 'p', color: 'w' };
+    renderPieces();
+}
+
+function renderChessBoard() {
+    let html = '';
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            const isDark = (r + c) % 2 === 1;
+            html += `<div class="chess-sq ${isDark ? 'dark' : 'light'}" data-r="${r}" data-c="${c}" onclick="handleChessClick(${r}, ${c})"></div>`;
+        }
+    }
+    return html;
+}
+
+function renderPieces() {
+    const squares = document.querySelectorAll('.chess-sq');
+    squares.forEach(sq => {
+        const r = sq.dataset.r;
+        const c = sq.dataset.c;
+        const p = chessBoard[r][c];
+        sq.textContent = p ? getChessPiece(p) : '';
+        sq.classList.toggle('has-piece', !!p);
+    });
+}
+
+function getChessPiece(p) {
+    const icons = {
+        'kw': '♔', 'qw': '♕', 'rw': '♖', 'bw': '♗', 'nw': '♘', 'pw': '♙',
+        'kb': '♚', 'qb': '♛', 'rb': '♜', 'bb': '♝', 'nb': '♞', 'pb': '♟'
+    };
+    return icons[p.type + p.color] || '';
+}
+
+function handleChessClick(r, c) {
+    const p = chessBoard[r][c];
+    if (selectedPiece) {
+        // Move piece
+        const { r: or, c: oc } = selectedPiece;
+        const piece = chessBoard[or][oc];
+        chessBoard[r][c] = piece;
+        chessBoard[or][oc] = null;
+        selectedPiece = null;
+        renderPieces();
+        socket.emit('game-move', { gameType: 'chess', type: 'move', from: { r: or, c: oc }, to: { r, c }, piece });
+    } else if (p) {
+        selectedPiece = { r, c };
+        document.querySelectorAll('.chess-sq').forEach(s => s.classList.remove('selected'));
+        document.querySelector(`.chess-sq[data-r="${r}"][data-c="${c}"]`).classList.add('selected');
+    }
+}
+
+socket.on('game-remote-move', (data) => {
+    if (data.gameType === 'chess') {
+        chessBoard[data.to.r][data.to.c] = data.piece;
+        chessBoard[data.from.r][data.from.c] = null;
+        renderPieces();
+    }
+    // ... other remote move handlers ...
+});
+
+function resetChess() {
+    socket.emit('game-reset', { gameType: 'chess' });
+}
+
+socket.on('game-reset-all', (data) => {
+    if (data && data.gameType === 'chess') initChessUI();
+    // ... other reset handlers ...
 });
 
 function applyMove(index, symbol) {

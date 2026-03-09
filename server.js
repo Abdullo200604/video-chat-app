@@ -240,7 +240,11 @@ app.get('/admin/:token', (req, res) => {
 
 // ── Random Rooms page ─────────────────────────────────
 app.get('/random', (req, res) => {
-  res.sendFile(__dirname + '/public/random.html');
+  res.redirect('https://chat.pdpedu.uz/random');
+});
+
+app.get('/games', (req, res) => {
+  res.sendFile(__dirname + '/public/games.html');
 });
 
 // Legacy direct room route (Catch all)
