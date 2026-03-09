@@ -8,6 +8,7 @@ require('dotenv').config();
 const adminAuth = require('./server/middleware/adminAuth');
 const adminRoutes = require('./server/routes/adminRoutes');
 const { registerRandomSocket } = require('./server/sockets/randomSocket');
+const db = require('./server/db/database');
 
 const app = express();
 app.set('trust proxy', 1); // For Render.com HTTPS
@@ -75,7 +76,35 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 
 // ── Room state ──────────────────────────────
 const rooms = {};
-// rooms[id] = { host, accessType, permissions, participants, theaterMode }
+const scheduledMeetings = [];
+
+// Load from DB on startup
+db.getRooms((err, rows) => {
+  if (rows) {
+    rows.forEach(r => {
+      rooms[r.id] = {
+        host: r.host,
+        isPrivate: !!r.isPrivate,
+        startTime: r.startTime,
+        chatEnabled: !!r.chatEnabled,
+        theaterMode: !!r.theaterMode,
+        gameType: r.gameType,
+        accessType: 'open', // Default for recovery
+        permissions: { screenShare: true, reactions: true, participantMic: true, participantCamera: true },
+        waitingRoom: [],
+        participants: {}
+      };
+    });
+    console.log(`[DB] Loaded ${rows.length} rooms.`);
+  }
+});
+
+db.getMeetings((err, rows) => {
+  if (rows) {
+    rows.forEach(m => scheduledMeetings.push({ ...m, link: `/lobby/${m.id}` }));
+    console.log(`[DB] Loaded ${rows.length} meetings.`);
+  }
+});
 
 // ── Routes ──────────────────────────────────
 
@@ -118,9 +147,11 @@ app.post('/api/create-room', (req, res) => {
       participantCamera: true,
     },
     waitingRoom: [],
-    participants: {}
+    participants: {},
+    gameType: req.body.gameType || null
   };
-  res.json({ roomId, link: `/lobby/${roomId}` });
+  db.saveRoom({ id: roomId, ...rooms[roomId] });
+  res.json({ roomId, link: `/lobby/${roomId}${req.body.gameType ? '?game=' + req.body.gameType : ''}` });
 });
 
 // Lobby (pre-join) page
@@ -156,7 +187,7 @@ app.post('/api/schedule', (req, res) => {
   const { title, date } = req.body;
   if (!title || !date) return res.status(400).json({ error: 'title and date required' });
   const roomId = generateShortId() + '-' + generateShortId();
-  const meeting = { id: roomId, title, date, createdBy: req.user?.name || 'Anonymous', link: `/lobby/${roomId}`, createdAt: Date.now() };
+  const meeting = { id: roomId, title, date, hostName: req.user?.name || 'Anonymous', link: `/lobby/${roomId}`, createdAt: Date.now() };
   scheduledMeetings.push(meeting);
   rooms[roomId] = {
     host: null, accessType: 'open', theaterMode: false, chatEnabled: true,
@@ -164,6 +195,8 @@ app.post('/api/schedule', (req, res) => {
     permissions: { screenShare: true, reactions: true, participantMic: true, participantCamera: true },
     waitingRoom: [], participants: {}
   };
+  db.saveMeeting(meeting);
+  db.saveRoom({ id: roomId, ...rooms[roomId] });
   res.json(meeting);
 });
 
@@ -177,7 +210,8 @@ app.get('/api/schedule', (req, res) => {
 app.delete('/api/schedule/:id', (req, res) => {
   const idx = scheduledMeetings.findIndex(m => m.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
-  scheduledMeetings.splice(idx, 1);
+  const [meeting] = scheduledMeetings.splice(idx, 1);
+  db.deleteMeeting(meeting.id);
   res.json({ ok: true });
 });
 
@@ -247,6 +281,13 @@ app.get('/games', (req, res) => {
   res.sendFile(__dirname + '/public/games.html');
 });
 
+app.get('/api/leaderboard/:game', (req, res) => {
+  db.getLeaderboard(req.params.game, (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
 // Legacy direct room route (Catch all)
 app.get('/:room', (req, res) => {
   const roomId = req.params.room;
@@ -277,7 +318,31 @@ io.on('connection', socket => {
     currentUserId = userId;
 
     if (!rooms[roomId]) {
-      socket.emit('force-kick', 'Siz qidirayotgan majlis topilmadi.');
+      // Try to load from DB before kicking
+      db.getRooms((err, rows) => {
+        const dbRoom = rows ? rows.find(r => r.id === roomId) : null;
+        if (dbRoom) {
+          rooms[roomId] = {
+            host: dbRoom.host,
+            isPrivate: !!dbRoom.isPrivate,
+            startTime: dbRoom.startTime,
+            chatEnabled: !!dbRoom.chatEnabled,
+            theaterMode: !!dbRoom.theaterMode,
+            gameType: dbRoom.gameType,
+            accessType: 'open',
+            permissions: { screenShare: true, reactions: true, participantMic: true, participantCamera: true },
+            waitingRoom: [],
+            participants: {}
+          };
+          // Server-side retry: trigger the same join-room handler again now that the room is in memory
+          const joinHandler = socket.listeners('join-room')[0];
+          if (joinHandler) {
+            process.nextTick(() => joinHandler(roomId, userId, name, initialStatus));
+          }
+        } else {
+          socket.emit('force-kick', 'Siz qidirayotgan majlis topilmadi.');
+        }
+      });
       return;
     }
 
@@ -343,6 +408,9 @@ io.on('connection', socket => {
 
     socket.to(roomId).emit('user-connected', userId, currentName);
     io.to(roomId).emit('participants-update', room.participants);
+
+    db.upsertUser(userId, currentName);
+    db.saveRoom({ id: roomId, ...room });
 
     if (adminRouter && adminRouter.addLog && !room.isPrivate) {
       adminRouter.addLog(`User ${currentName} (${userId}) joined room ${roomId}`);
@@ -465,6 +533,11 @@ io.on('connection', socket => {
 
     socket.on('game-reset', () => {
       io.to(roomId).emit('game-reset-all');
+    });
+
+    socket.on('save-game-score', (data) => {
+      // data: { gameType, score }
+      db.addScore(userId, data.gameType, data.score);
     });
 
     socket.on('disconnect', () => {

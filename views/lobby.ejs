@@ -232,6 +232,15 @@
         // ── Boot ────────────────────────────────────
         initMedia();
 
+        const savedName = sessionStorage.getItem('pdp_name');
+        if (savedName) {
+            const nameInput = document.getElementById('nameInput');
+            nameInput.value = savedName;
+            document.getElementById('joinBtn').disabled = savedName.trim().length < 2;
+            const initial = savedName.trim().charAt(0).toUpperCase() || '?';
+            document.getElementById('avatarInitial').textContent = initial;
+        }
+
         // Overwrite joinMeeting for Knocking support
         function joinMeeting() {
             const name = document.getElementById('nameInput').value.trim();

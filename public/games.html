@@ -374,6 +374,71 @@
             background: #475569;
         }
 
+        /* Leaderboard Styles */
+        .leaderboard-section {
+            margin-top: 4rem;
+            margin-bottom: 4rem;
+        }
+
+        .leaderboard-title {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 2rem;
+        }
+
+        .leaderboard-title i {
+            color: var(--accent-yellow);
+            font-size: 2rem;
+        }
+
+        .leaderboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .leaderboard-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 1.5rem;
+        }
+
+        .leaderboard-card h4 {
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-muted);
+        }
+
+        .leaderboard-list {
+            list-style: none;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 0.9rem;
+        }
+
+        .leaderboard-item:last-child {
+            border-bottom: none;
+        }
+
+        .leaderboard-item .rank {
+            color: var(--accent-yellow);
+            font-weight: 800;
+            margin-right: 10px;
+        }
+
+        .leaderboard-item .score {
+            font-weight: 600;
+            color: var(--accent-green);
+        }
+
         @media (max-width: 768px) {
             .hero h1 {
                 font-size: 2.5rem;
@@ -500,6 +565,17 @@
                 </div>
             </div>
         </div>
+
+        <!-- Leaderboard Section -->
+        <section class="leaderboard-section">
+            <div class="leaderboard-title">
+                <i class="fas fa-trophy"></i>
+                <h2>Peshqadamlar Jadvali</h2>
+            </div>
+            <div class="leaderboard-grid" id="leaderboardGrid">
+                <!-- Loaded via JS -->
+            </div>
+        </section>
     </main>
 
     <!-- Create Room Modal -->
@@ -523,6 +599,55 @@
     <script>
         const socket = io('/');
         let selectedGame = null;
+
+        // User Profile Initialization
+        let userId = localStorage.getItem('pdp_user_id');
+        if (!userId) {
+            userId = 'user_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('pdp_user_id', userId);
+        }
+
+        const gameTypes = ['tictactoe', 'rps', 'snake', 'chess', 'ludo', 'battleship'];
+        const gameNames = {
+            'tictactoe': 'Tic-Tac-Toe',
+            'rps': 'Tosh-Qaychi-Qog\'oz',
+            'snake': 'Snake',
+            'chess': 'Shaxmat',
+            'ludo': 'Ludo',
+            'battleship': 'Dengiz jangi'
+        };
+
+        // Load Leaderboards
+        async function loadLeaderboards() {
+            const grid = document.getElementById('leaderboardGrid');
+            grid.innerHTML = '';
+
+            for (const game of gameTypes) {
+                try {
+                    const res = await fetch(`/api/leaderboard/${game}`);
+                    const players = await res.json();
+
+                    if (players.length > 0) {
+                        const card = document.createElement('div');
+                        card.className = 'leaderboard-card';
+                        card.innerHTML = `
+                            <h4>${gameNames[game]} <i class="fas fa-medal"></i></h4>
+                            <ul class="leaderboard-list">
+                                ${players.map((p, i) => `
+                                    <li class="leaderboard-item">
+                                        <span><span class="rank">#${i + 1}</span> ${p.name}</span>
+                                        <span class="score">${p.totalScore}</span>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        `;
+                        grid.appendChild(card);
+                    }
+                } catch (e) { console.error(e); }
+            }
+        }
+
+        loadLeaderboards();
 
         function openCreateModal(game) {
             selectedGame = game;
@@ -552,6 +677,8 @@
                 return;
             }
             sessionStorage.setItem('pdp_name', name);
+            // Sync with backend to save name
+            socket.emit('update-user-profile', { userId, name });
 
             try {
                 const res = await fetch('/api/create-room', {

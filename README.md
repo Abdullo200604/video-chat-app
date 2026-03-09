@@ -2,13 +2,13 @@
 
 # 🎙️ PDP Chat
 
-**Zamonaviy, real-vaqt video-konferensiya platformasi**
+**Zamonaviy, real-vaqt video-konferensiya va o'yinlar platformasi**
 
 [![Node.js](https://img.shields.io/badge/Node.js-22.x-339933?style=flat-square&logo=node.js)](https://nodejs.org)
 [![Socket.IO](https://img.shields.io/badge/Socket.IO-4.x-black?style=flat-square&logo=socket.io)](https://socket.io)
 [![PeerJS](https://img.shields.io/badge/PeerJS-WebRTC-0078D7?style=flat-square)](https://peerjs.com)
+[![SQLite](https://img.shields.io/badge/Database-SQLite3-003B57?style=flat-square&logo=sqlite)](https://sqlite.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
-[![Deploy on Render](https://img.shields.io/badge/Deploy-Render-46E3B7?style=flat-square&logo=render)](https://render.com)
 
 [🌐 Live Demo](https://chat.pdpedu.uz) · [🐛 Bug Report](https://github.com/Abdullo200604/video-chat-app/issues) · [✨ Feature Request](https://github.com/Abdullo200604/video-chat-app/issues)
 
@@ -22,44 +22,29 @@
 - **HD Video & Audio** — WebRTC orqali foydalanuvchilar o'rtasida to'g'ridan-to'g'ri aloqa
 - **Ekran ulashish** — ixtiyoriy dastur yoki butun ekranni ulashish
 - **Video effektlar** — blur, sepia, grayscale va boshqalar
-- **Fon blur** — virtual fon effekti
+- **Maxfiy suhbat** — end-to-end darajasidagi xavfsizlik va blur effektlar
 - **Yozib olish** — majlisni WebM formatida yuklab olish
 
-### 🎲 Random Rooms _(Yangi!)_
-- **1-on-1 Random Chat** — Omegle uslubida tasodifiy hamkor topish
-- **Qiziqishlar bo'yicha tasniflash** — umumiy mavzular asosida mos juftlash
-- **Jamoat Xonalari** — ommaviy xonalar yaratish, ko'rish va ulashish
-- **"Keyingisi" tugmasi** — yangi shaxs bilan darhol uchrashuv
-- **Shikoyat tizimi** — noo'rin foydalanuvchilarni xabar qilish
+### 🎲 O'yinlar Markazi (Multiplayer Games) _(Yangi!)_
+- **6 xil multipleyer o'yin**:
+  - **Tic-Tac-Toe** (X/O)
+  - **Tosh, Qaychi, Qog'oz** (RPS)
+  - **Multiplayer Iloncha** (Snake)
+  - **Sodda Shaxmat** (Simple Chess)
+  - **Ludo** (Pochchi)
+  - **Dengiz jangi** (Battleship)
+- **Leaderboard (Peshqadamlar)** — har bir o'yin bo'yicha eng kuchli 10 talik reyting
+- **Spectator Mode (Tomoshabin)** — o'yinlarni tashqaridan kuzatish imkoniyati
 
-### 💬 Hamkorlik
-- **Matn chati** — xona ichida real-vaqt xabar almashish
-- **Reaksiyalar** — emoji reaksiyalari (🎉 ❤️ 👍)
-- **Qo'l ko'tarish** — so'z so'rash belgisi
-- **Ishtirokchilar paneli** — barcha a'zolarni ko'rish
+### 💾 Server-side Persistence (SQLite)
+- **Ma'lumotlar xavfsizligi** — xonalar va rejalashtirilgan majlislar SQLite bazasida saqlanadi
+- **Avtomatik yuklash** — server o'chib yonganda barcha xonalar va ma'lumotlar qayta tiklanadi
+- **Foydalanuvchi ballari** — o'yin natijalari va foydalanuvchi profillari bazada doimiy saqlanadi
 
-### 🛡️ Moderatsiya (Mezbonlar)
-- **Mezbonlik** — qarorlar: kirish turi (ochiq / so'rovli / ishonchli)
-- **Mikrofon/Kamera boshqaruvi** — ishtirokchilar qurilmasini o'chirish/yoqish
-- **Chiqarish** — keraksiz foydalanuvchilarni xonadan olib tashlash
-- **Chat to'xtatish** — barcha foydalanuvchilar uchun chatni yopish/ochish
-- **Teatr rejimi** — bitta videodan ko'rgazma qilish
-
-### ⚙️ Foydalanuvchi Sozlamalari
-- **Kamera tanlash** — bir necha kamera bo'lsa, istalganini tanlash
-- **Mikrofon tanlash** — bir necha mikrofon bo'lsa, istalganini tanlash
-- **Majlis davomida almashtirish** — jonli efir paytida qurilma o'zgartirish
-
-### 📊 Admin Panel
-- **Statistika** — jami foydalanuvchilar, faol majlislar, onlayn soni
-- **Foydalanuvchilar boshqaruvi** — ban/unban, ma'lumotlarni ko'rish
-- **Majlislar boshqaruvi** — xonalarni yakunlash, ishtirokchilarni ko'rish
-- **Tizim jurnali** — barcha foydalanuvchi harakatlarini kuzatish
-
-### 🔐 Autentifikatsiya
-- **Google OAuth 2.0** — bitta bosish bilan kirish
-- **Mehmon rejimi** — ro'yxatdan o'tmasdan ism bilan kirish
-- **Seans saqlash** — `session-file-store` orqali doimiy seans
+### 🛡️ Moderatsiya va Boshqaruv
+- **Mezbonlik** — kirish turi (ochiq / so'rovli / ishonchli) va qurilmalar boshqaruvi
+- **Teatr rejimi** — bitta videoga fokus qaratish
+- **Admin Panel** — statistika, foydalanuvchilar va majlislarni to'liq boshqarish
 
 ---
 
@@ -67,59 +52,12 @@
 
 | Qatlam | Texnologiya |
 |--------|-------------|
-| **Server** | Node.js 22, Express 4 |
+| **Server** | Node.js 22, Express |
 | **Real-vaqt** | Socket.IO 4 |
-| **WebRTC** | PeerJS (vanilla WebRTC ustida) |
-| **STUN/TURN** | Google STUN (5 server), Cloudflare STUN, OpenRelay TURN |
+| **Ma'lumotlar Bazasi** | SQLite3 |
+| **WebRTC** | PeerJS |
 | **Autentifikatsiya** | Passport.js + Google OAuth 2.0 |
-| **Sessiya** | express-session + session-file-store |
 | **Shablon** | EJS |
-| **Deployment** | Render.com |
-
----
-
-## 🚀 O'rnatish va Ishga Tushirish
-
-### Talablar
-- Node.js ≥ 18
-- npm ≥ 9
-
-### Lokal ishga tushirish
-
-```bash
-# 1. Klonlash
-git clone https://github.com/Abdullo200604/video-chat-app.git
-cd video-chat-app
-
-# 2. Paketlarni o'rnatish
-npm install
-
-# 3. .env faylini sozlash
-cp .env.example .env
-# .env faylini tahrirlang (quyida ko'ring)
-
-# 4. Ishga tushirish
-npm start
-```
-
-### 🔧 Muhit O'zgaruvchilari (`.env`)
-
-```env
-# Server
-PORT=3000
-NODE_ENV=development
-
-# Sessiya
-SESSION_SECRET=your-secret-key
-
-# Google OAuth (ixtiyoriy)
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-GOOGLE_CALLBACK_URL=http://localhost:3000/auth/google/callback
-
-# Admin Panel
-ADMIN_SECRET=your_admin_password
-```
 
 ---
 
@@ -129,83 +67,45 @@ ADMIN_SECRET=your_admin_password
 pdp-chat/
 ├── server.js                 ← Asosiy kirish nuqtasi
 ├── server/
+│   ├── db/
+│   │   └── database.js       ← SQLite integratsiyasi
 │   ├── middleware/
 │   │   └── adminAuth.js      ← Admin himoyasi
 │   ├── routes/
 │   │   └── adminRoutes.js    ← Admin API
-│   ├── matchmaking/
-│   │   ├── queue.js          ← 1-on-1 navbat tizimi
-│   │   └── publicRooms.js    ← Jamoat xonalari
-│   └── sockets/
-│       └── randomSocket.js   ← Random Rooms socket handleri
-├── views/
-│   ├── room.ejs              ← Majlis xonasi
-│   └── lobby.ejs             ← Majlisga kirish
+│   └── sockets/              ← Socket logic
+├── views/                    ← EJS shablonlari
 └── public/
-    ├── index.html            ← Asosiy sahifa
-    ├── random.html           ← Random Rooms
-    ├── script.js             ← Majlis xonasi JS (WebRTC)
-    ├── style.css             ← Majlis stili
-    ├── lobby.css             ← Lobby stili
-    ├── index.css             ← Asosiy sahifa stili
-    ├── css/random.css        ← Random sahifasi stili
-    ├── js/random.js          ← Random sahifasi JS
-    └── admin/
-        └── dashboard.html    ← Admin panel
+    ├── games.html            ← O'yinlar markazi (Leaderboard bilan)
+    ├── script.js             ← Majlis xonasi JS
+    └── style.css             ← Asosiy dizayn
 ```
 
 ---
 
-## 🔗 URL Marshrutlari
+## 🔗 Asosiy URL Marshrutlari
 
 | Marshrut | Tavsif |
 |----------|--------|
-| `/` | Asosiy sahifa — majlis yaratish / link orqali kirish |
-| `/random` | Random Rooms — tasodifiy suhbat va jamoat xonalari |
-| `/lobby/:roomId` | Majlisga kirish oldidan ko'rib chiqish |
-| `/meeting/:roomId` | Asosiy video majlis xonasi |
-| `/admin?token=...` | Admin boshqaruv paneli |
-| `/auth/google` | Google orqali kirish |
-| `/logout` | Chiqish |
-| `/api/create-room` | `POST` — yangi majlis yaratish |
-| `/api/admin/*` | Admin API (himoyalangan) |
-| `/api/user` | Joriy foydalanuvchi ma'lumotlari |
+| `/` | Asosiy sahifa |
+| `/games` | O'yinlar Markazi va Leaderboard |
+| `/random` | Random Rooms (Tasodifiy suhbat) |
+| `/admin` | Admin boshqaruv paneli |
+| `/api/leaderboard/:game` | O'yin reytingini olish |
 
 ---
 
-## 🎲 Random Rooms Qanday Ishlaydi?
+## 🚀 Ishga Tushirish
 
-```
-Foydalanuvchi A                 Server                 Foydalanuvchi B
-     │                             │                          │
-     │── random:join_queue ───────►│                          │
-     │                             │◄── random:join_queue ────│
-     │                             │                          │
-     │                        Match topildi!                  │
-     │◄── random:match_found ──────│──── random:match_found ──►│
-     │         (roomId)            │         (roomId)          │
-     │                             │                          │
-     └───────── /lobby/roomId ─────┴────────── /lobby/roomId ─┘
-                  WebRTC ulanish boshlandi
-```
-
----
-
-## 🤝 Hissa Qo'shish
-
-1. Fork qiling
-2. Yangi branch yarating (`git checkout -b feature/yangi-funksiya`)
-3. O'zgarishlaringizni commit qiling (`git commit -am 'Add: yangi funksiya'`)
-4. Push qiling (`git push origin feature/yangi-funksiya`)
-5. Pull Request yarating
+1. `npm install`
+2. `.env` faylini sozlang
+3. `npm start`
 
 ---
 
 ## 📄 Litsenziya
 
 MIT © 2025 [Abdullo Mamatqulov](https://github.com/Abdullo200604)
-
----
 
 <div align="center">
   <sub>PDP Education tomonidan ❤️ bilan qurildi</sub>

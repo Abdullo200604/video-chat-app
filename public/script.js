@@ -46,6 +46,12 @@ let currentEffect = 'none';
 let permissions = { screenShare: true, reactions: true, participantMic: true, participantCamera: true };
 let chatEnabled = true;
 let participants = {};
+let persistentId = localStorage.getItem('pdp_user_id');
+if (!persistentId) {
+    persistentId = 'user_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('pdp_user_id', persistentId);
+}
+let myRole = 'player'; // player | spectator
 
 const effectFilters = {
     none: '',
@@ -92,7 +98,7 @@ const videoGrid = document.getElementById('videoGrid');
 
 myPeer.on('open', id => {
     myPeerId = id;
-    const status = { muted: !micOn, videoOff: !camOn, effect: currentEffect };
+    const status = { muted: !micOn, videoOff: !camOn, effect: currentEffect, persistentId };
     socket.emit('join-room', ROOM_ID, id, myName, status);
 });
 
@@ -142,11 +148,15 @@ socket.on('room-state', state => {
         document.querySelectorAll('.host-only').forEach(el => el.classList.remove('hidden'));
     }
     chatEnabled = state.chatEnabled;
-    participants = state.participants || {};
-    Object.assign(permissions, state.permissions || {});
     updateParticipantsUI();
     if (state.startTime) startTimer(state.startTime);
     syncEffects();
+
+    // Spectator check
+    const count = Object.keys(participants).length;
+    // If more than 4 players, or if room is already full for specific games
+    if (activeGame && count > 4) myRole = 'spectator';
+    updateRoleUI();
 
     if (state.isPrivate) {
         initPrivateSession();
@@ -1198,7 +1208,10 @@ function initTicTacToeUI() {
     `;
 
     document.querySelectorAll('.ttt-cell').forEach(cell => {
-        cell.onclick = () => handleGameMove(cell.dataset.index);
+        cell.onclick = () => {
+            if (myRole === 'spectator') return showToast('Kuzatish rejimidagi ishtirokchilar o\'ynay olmaydi');
+            handleGameMove(cell.dataset.index);
+        };
     });
 
     // Reset state
@@ -1237,9 +1250,9 @@ function initRPSUI() {
             <div class="game-status" id="gameStatus">Tanlang...</div>
         </div>
         <div class="rps-board">
-            <button class="rps-btn" onclick="sendRPSMove('rock')">🪨 Tosh</button>
-            <button class="rps-btn" onclick="sendRPSMove('paper')">📄 Qog'oz</button>
-            <button class="rps-btn" onclick="sendRPSMove('scissors')">✂️ Qaychi</button>
+            <button class="rps-btn" onclick="myRole === 'spectator' ? showToast('Kuzatuvchi o\\'ynay olmaydi') : sendRPSMove('rock')">🪨 Tosh</button>
+            <button class="rps-btn" onclick="myRole === 'spectator' ? showToast('Kuzatuvchi o\\'ynay olmaydi') : sendRPSMove('paper')">📄 Qog'oz</button>
+            <button class="rps-btn" onclick="myRole === 'spectator' ? showToast('Kuzatuvchi o\\'ynay olmaydi') : sendRPSMove('scissors')">✂️ Qaychi</button>
         </div>
         <div class="rps-result hidden" id="rpsResult"></div>
         <div class="game-actions">
@@ -1295,6 +1308,10 @@ function checkRPSWinner() {
     `;
     resEl.classList.remove('hidden');
     document.getElementById('gameStatus').textContent = 'O\'yin tugadi';
+
+    if (result.includes('Siz g\'alaba qozondingiz')) {
+        socket.emit('save-game-score', { gameType: 'rps', score: 5 });
+    }
 }
 
 function getRPSEmoji(choice) {
@@ -1374,6 +1391,7 @@ function setupLudoBoard() {
 }
 
 function rollLudoDice() {
+    if (myRole === 'spectator') return showToast('Kuzatuvchi o\'ynay olmaydi');
     if (ludoState.rolling) return;
     const dice = Math.floor(Math.random() * 6) + 1;
     ludoState.dice = dice;
@@ -1383,6 +1401,7 @@ function rollLudoDice() {
 }
 
 function moveLudoToken(playerIdx, tokenIdx) {
+    if (myRole === 'spectator') return showToast('Tomoshabin toshlarni sura olmaydi');
     if (ludoState.dice === 0) return;
     // For simplicity, just simulate a move
     ludoState.positions[playerIdx][tokenIdx] += ludoState.dice;
@@ -1453,6 +1472,7 @@ function createBSGrids() {
 }
 
 function placeShip(idx) {
+    if (myRole === 'spectator') return showToast('Tomoshabin kemalarni joylay olmaydi');
     // Basic ship placement logic
     const cell = document.querySelector(`.bs-cell.my[data-idx="${idx}"]`);
     cell.classList.toggle('ship');
@@ -1460,6 +1480,7 @@ function placeShip(idx) {
 }
 
 function fireBS(idx) {
+    if (myRole === 'spectator') return showToast('Tomoshabin o\'q uza olmaydi');
     socket.emit('game-move', { gameType: 'battleship', type: 'fire', idx, uid: myPeerId });
 }
 
@@ -1524,6 +1545,7 @@ function initSnakeUI() {
 }
 
 function handleSnakeKey(e) {
+    if (myRole === 'spectator') return;
     if (activeGame !== 'snake') return;
     const key = e.key;
     const { direction } = snakeGameState;
@@ -1572,6 +1594,12 @@ function updateSnake() {
     if (head.x === snakeGameState.food.x && head.y === snakeGameState.food.y) {
         snakeGameState.score += 10;
         document.getElementById('gameStatus').textContent = `Ochko: ${snakeGameState.score}`;
+
+        if (snakeGameState.score >= 50 && !snakeGameState.gaveScore) {
+            snakeGameState.gaveScore = true;
+            showToast('Tabriklaymiz! 50 ochko uchun +5 ball!');
+            socket.emit('save-game-score', { gameType: 'snake', score: 5 });
+        }
 
         // Only HOST generates new food to keep everyone in sync
         if (isHost) {
@@ -1636,7 +1664,7 @@ function initChessUI() {
 
     area.innerHTML = `
         <div class="game-header">
-            <h3>Sodda Shaxmat</h3>
+            <h3>Sodda Shaxmat <span class="role-badge ${myRole}">${myRole === 'player' ? 'O\'yinchi' : 'Tomoshabin'}</span></h3>
             <div class="game-status" id="gameStatus">Oqlar yuradi</div>
         </div>
         <div class="chess-container" id="chessBoard">
@@ -1649,6 +1677,7 @@ function initChessUI() {
     `;
 
     setupChessState();
+    updateRoleUI();
 }
 
 function setupChessState() {
@@ -1697,6 +1726,7 @@ function setupChessState() {
 }
 
 function handleChessClick(r, c) {
+    if (myRole === 'spectator') return showToast('Tomoshabin sifatida figuralarni sura olmaysiz');
     const p = chessBoard[r][c];
     if (selectedPiece) {
         // Move piece
@@ -1782,6 +1812,9 @@ function applyMove(index, symbol) {
         if (winner) {
             status.textContent = `G'alaba: ${winner}!`;
             showToast(`🎉 ${winner} o'yinda g'alaba qozondi!`);
+            if ((winner === 'X' && mySymbol === 'X') || (winner === 'O' && mySymbol === 'O')) {
+                socket.emit('save-game-score', { gameType: 'tictactoe', score: 10 });
+            }
         } else if (!gameBoard.includes(null)) {
             status.textContent = "Durang!";
         } else {
@@ -1798,6 +1831,16 @@ function resetGame() {
 function exitGame() {
     document.getElementById('gamesDashboard').classList.remove('hidden');
     document.getElementById('activeGameArea').classList.add('hidden');
+    activeGame = null;
+    myRole = 'player'; // Reset role
+}
+
+function updateRoleUI() {
+    const badge = document.querySelector('.role-badge');
+    if (badge) {
+        badge.className = `role-badge ${myRole}`;
+        badge.textContent = myRole === 'player' ? 'O\'yinchi' : 'Tomoshabin';
+    }
 }
 
 function calculateWinner(squares) {

@@ -1746,3 +1746,26 @@ body.meeting-body {
     transform: scale(1.05);
     background: #1a73e8;
 }
+
+/* ── ROLE BADGE ── */
+.role-badge {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+    margin-left: 10px;
+    text-transform: uppercase;
+    display: inline-block;
+}
+
+.role-badge.player {
+    background: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.role-badge.spectator {
+    background: rgba(148, 163, 184, 0.2);
+    color: #94a3b8;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+}
