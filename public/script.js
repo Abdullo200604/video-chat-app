@@ -1352,24 +1352,63 @@ function initLudoUI() {
 }
 
 function setupLudoBoard() {
-    // Simple Ludo board representation
     const board = document.getElementById('ludoBoard');
-    // For MVP, we'll use a simplified list of tokens and a status approach
-    // Real Ludo logic is heavy, so we'll implement a functional P2P version
+    board.innerHTML = '';
+    // Represent 4 zones/colors
+    ludoState.colors.forEach((color, i) => {
+        const home = document.createElement('div');
+        home.className = `ludo-home ${color}`;
+        for (let j = 0; j < 4; j++) {
+            const token = document.createElement('div');
+            token.className = `ludo-token ${color}`;
+            token.id = `token-${i}-${j}`;
+            token.onclick = () => moveLudoToken(i, j);
+            home.appendChild(token);
+        }
+        board.appendChild(home);
+    });
+    const center = document.createElement('div');
+    center.className = 'ludo-center';
+    center.textContent = 'LUDO';
+    board.appendChild(center);
 }
 
 function rollLudoDice() {
     if (ludoState.rolling) return;
     const dice = Math.floor(Math.random() * 6) + 1;
+    ludoState.dice = dice;
     document.getElementById('diceResult').textContent = dice;
+    showToast(`Siz ${dice} tashladingiz! Endi toshni tanlang.`);
     socket.emit('game-move', { gameType: 'ludo', type: 'dice', value: dice, uid: myPeerId });
-    // Token move logic would follow...
+}
+
+function moveLudoToken(playerIdx, tokenIdx) {
+    if (ludoState.dice === 0) return;
+    // For simplicity, just simulate a move
+    ludoState.positions[playerIdx][tokenIdx] += ludoState.dice;
+    const pos = ludoState.positions[playerIdx][tokenIdx];
+    showToast(`Tosh ${pos}-katakka ko'chirildi`);
+
+    socket.emit('game-move', {
+        gameType: 'ludo',
+        type: 'token-move',
+        playerIdx,
+        tokenIdx,
+        newPos: pos,
+        uid: myPeerId
+    });
+    ludoState.dice = 0;
+    document.getElementById('diceResult').textContent = '?';
 }
 
 function handleRemoteLudoMove(data) {
     if (data.type === 'dice') {
         document.getElementById('diceResult').textContent = data.value;
         showToast(`${participants[data.uid]?.name || 'Raqib'} dice tashladi: ${data.value}`);
+    }
+    if (data.type === 'token-move') {
+        ludoState.positions[data.playerIdx][data.tokenIdx] = data.newPos;
+        showToast(`${participants[data.uid]?.name || 'Raqib'} toshini surdi`);
     }
 }
 
@@ -1504,15 +1543,17 @@ function handleSnakeKey(e) {
 function handleRemoteSnakeMove(data) {
     if (data.type === 'dir') {
         if (!snakeGameState.snakes[data.uid]) snakeGameState.snakes[data.uid] = [{ x: 5, y: 5 }];
-        // Just track current position from remote, but for simplicity in this p2p version, 
-        // we'll just let each client simulate their own snake and broadcast tail.
     }
     if (data.type === 'pos') {
         snakeGameState.snakes[data.uid] = data.snake;
     }
+    if (data.type === 'food') {
+        snakeGameState.food = data.food;
+    }
 }
 
 function updateSnake() {
+    if (!snakeGameState.snakes[myPeerId]) return;
     snakeGameState.direction = snakeGameState.nextDir;
     const head = {
         x: snakeGameState.snakes[myPeerId][0].x + snakeGameState.direction.x,
@@ -1531,10 +1572,20 @@ function updateSnake() {
     if (head.x === snakeGameState.food.x && head.y === snakeGameState.food.y) {
         snakeGameState.score += 10;
         document.getElementById('gameStatus').textContent = `Ochko: ${snakeGameState.score}`;
-        snakeGameState.food = {
-            x: Math.floor(Math.random() * 15),
-            y: Math.floor(Math.random() * 15)
-        };
+
+        // Only HOST generates new food to keep everyone in sync
+        if (isHost) {
+            const newFood = {
+                x: Math.floor(Math.random() * 15),
+                y: Math.floor(Math.random() * 15)
+            };
+            snakeGameState.food = newFood;
+            socket.emit('game-move', {
+                gameType: 'snake',
+                type: 'food',
+                food: newFood
+            });
+        }
     } else {
         if (snakeGameState.direction.x !== 0 || snakeGameState.direction.y !== 0) {
             snakeGameState.snakes[myPeerId].pop();
@@ -1632,12 +1683,17 @@ function renderPieces() {
     });
 }
 
-function getChessPiece(p) {
-    const icons = {
-        'kw': '♔', 'qw': '♕', 'rw': '♖', 'bw': '♗', 'nw': '♘', 'pw': '♙',
-        'kb': '♚', 'qb': '♛', 'rb': '♜', 'bb': '♝', 'nb': '♞', 'pb': '♟'
-    };
-    return icons[p.type + p.color] || '';
+let chessTurn = 'w'; // 'w' or 'b'
+
+function setupChessState() {
+    chessBoard = Array(8).fill(null).map(() => Array(8).fill(null));
+    chessTurn = 'w';
+    // Simple setup
+    chessBoard[0][4] = { type: 'k', color: 'b' };
+    chessBoard[7][4] = { type: 'k', color: 'w' };
+    chessBoard[1][4] = { type: 'p', color: 'b' };
+    chessBoard[6][4] = { type: 'p', color: 'w' };
+    renderPieces();
 }
 
 function handleChessClick(r, c) {
@@ -1646,25 +1702,46 @@ function handleChessClick(r, c) {
         // Move piece
         const { r: or, c: oc } = selectedPiece;
         const piece = chessBoard[or][oc];
+
+        // Basic Turn Validation
+        if (piece.color !== chessTurn) {
+            showToast("Hozir sizning navbatingiz emas!");
+            selectedPiece = null;
+            document.querySelectorAll('.chess-sq').forEach(s => s.classList.remove('selected'));
+            return;
+        }
+
         chessBoard[r][c] = piece;
         chessBoard[or][oc] = null;
         selectedPiece = null;
+        chessTurn = chessTurn === 'w' ? 'b' : 'w';
+        updateChessStatus();
         renderPieces();
-        socket.emit('game-move', { gameType: 'chess', type: 'move', from: { r: or, c: oc }, to: { r, c }, piece });
+        socket.emit('game-move', { gameType: 'chess', type: 'move', from: { r: or, c: oc }, to: { r, c }, piece, nextTurn: chessTurn });
     } else if (p) {
+        if (p.color !== chessTurn) return;
         selectedPiece = { r, c };
         document.querySelectorAll('.chess-sq').forEach(s => s.classList.remove('selected'));
         document.querySelector(`.chess-sq[data-r="${r}"][data-c="${c}"]`).classList.add('selected');
     }
 }
 
+function updateChessStatus() {
+    const status = document.getElementById('gameStatus');
+    if (status) status.textContent = chessTurn === 'w' ? 'Oqlar yuradi' : 'Qoralar yuradi';
+}
+
 socket.on('game-remote-move', (data) => {
     if (data.gameType === 'chess') {
         chessBoard[data.to.r][data.to.c] = data.piece;
         chessBoard[data.from.r][data.from.c] = null;
+        chessTurn = data.nextTurn;
+        updateChessStatus();
         renderPieces();
     }
-    // ... other remote move handlers ...
+    if (data.gameType === 'snake') handleRemoteSnakeMove(data);
+    if (data.gameType === 'ludo') handleRemoteLudoMove(data);
+    if (data.gameType === 'battleship') handleRemoteBattleshipMove(data);
 });
 
 function resetChess() {
@@ -1673,7 +1750,21 @@ function resetChess() {
 
 socket.on('game-reset-all', (data) => {
     if (data && data.gameType === 'chess') initChessUI();
-    // ... other reset handlers ...
+    else if (data && data.gameType === 'rps') initRPSUI();
+    else if (data && data.gameType === 'snake') initSnakeUI();
+    else if (data && data.gameType === 'ludo') initLudoUI();
+    else if (data && data.gameType === 'battleship') initBattleshipUI();
+    else {
+        // Default Tic-Tac-Toe reset
+        gameBoard = Array(9).fill(null);
+        currentTurn = 'X';
+        document.querySelectorAll('.ttt-cell').forEach(c => {
+            c.textContent = '';
+            c.className = 'ttt-cell';
+        });
+        const status = document.getElementById('gameStatus');
+        if (status) status.textContent = "Navbat: X";
+    }
 });
 
 function applyMove(index, symbol) {
@@ -1703,16 +1794,6 @@ function resetGame() {
     socket.emit('game-reset');
 }
 
-socket.on('game-reset-all', () => {
-    gameBoard = Array(9).fill(null);
-    currentTurn = 'X';
-    document.querySelectorAll('.ttt-cell').forEach(c => {
-        c.textContent = '';
-        c.className = 'ttt-cell';
-    });
-    const status = document.getElementById('gameStatus');
-    if (status) status.textContent = "Navbat: X";
-});
 
 function exitGame() {
     document.getElementById('gamesDashboard').classList.remove('hidden');
