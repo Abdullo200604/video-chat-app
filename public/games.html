@@ -469,6 +469,36 @@
                     <button class="btn-play" onclick="openCreateModal('chess')">O'ynash</button>
                 </div>
             </div>
+            <!-- Ludo -->
+            <div class="game-card">
+                <div class="game-icon" style="color: var(--accent-yellow); background: rgba(245, 158, 11, 0.1);">
+                    <i class="fas fa-dice"></i>
+                </div>
+                <div class="game-info">
+                    <h3>Ludo (Pochchi)</h3>
+                    <p>4 kishigacha o'ynash mumkin. Do'stlar bilan toshlarni marraga birinchi bo'lib yetkazish poygasi.
+                    </p>
+                </div>
+                <div class="game-footer">
+                    <div class="players-tag"><i class="fas fa-users"></i> 2-4 kishi</div>
+                    <button class="btn-play" onclick="openCreateModal('ludo')">O'ynash</button>
+                </div>
+            </div>
+
+            <!-- Battleship -->
+            <div class="game-card">
+                <div class="game-icon" style="color: var(--primary); background: rgba(99, 102, 241, 0.1);">
+                    <i class="fas fa-ship"></i>
+                </div>
+                <div class="game-info">
+                    <h3>Dengiz jangi</h3>
+                    <p>Strategik mahoratingizni sinang. Raqib kemalarini toping va ularni yo'q qiling.</p>
+                </div>
+                <div class="game-footer">
+                    <div class="players-tag"><i class="fas fa-users"></i> 2 kishi</div>
+                    <button class="btn-play" onclick="openCreateModal('battleship')">O'ynash</button>
+                </div>
+            </div>
         </div>
     </main>
 
@@ -500,7 +530,9 @@
                 'tictactoe': 'Tic-Tac-Toe xonasini yaratish',
                 'rps': 'Tosh, Qaychi, Qog\'oz xonasini yaratish',
                 'snake': 'Iloncha xonasini yaratish',
-                'chess': 'Shaxmat xonasini yaratish'
+                'chess': 'Shaxmat xonasini yaratish',
+                'ludo': 'Ludo xonasini yaratish',
+                'battleship': 'Dengiz jangi xonasini yaratish'
             };
             document.getElementById('modalTitle').textContent = titles[game];
             document.getElementById('createModal').style.display = 'flex';

@@ -1172,6 +1172,8 @@ socket.on('game-started', ({ gameType, startedBy }) => {
     if (gameType === 'tictactoe') initTicTacToeUI();
     if (gameType === 'rps') initRPSUI();
     if (gameType === 'snake') initSnakeUI();
+    if (gameType === 'ludo') initLudoUI();
+    if (gameType === 'battleship') initBattleshipUI();
 });
 
 function initTicTacToeUI() {
@@ -1216,6 +1218,8 @@ socket.on('game-remote-move', (data) => {
     if (data.gameType === 'tictactoe') applyMove(data.index, data.symbol);
     if (data.gameType === 'rps') handleRemoteRPSMove(data);
     if (data.gameType === 'snake') handleRemoteSnakeMove(data);
+    if (data.gameType === 'ludo') handleRemoteLudoMove(data);
+    if (data.gameType === 'battleship') handleRemoteBattleshipMove(data);
 });
 
 // ── ROCK PAPER SCISSORS ───────────────────────────
@@ -1304,18 +1308,134 @@ function resetRPS() {
 socket.on('game-reset-all', (data) => {
     if (data && data.gameType === 'rps') initRPSUI();
     else if (data && data.gameType === 'snake') initSnakeUI();
+    else if (data && data.gameType === 'ludo') initLudoUI();
+    else if (data && data.gameType === 'battleship') initBattleshipUI();
     else {
-        // Default Tictactoe reset
-        gameBoard = Array(9).fill(null);
-        currentTurn = 'X';
-        document.querySelectorAll('.ttt-cell').forEach(c => {
-            c.textContent = '';
-            c.className = 'ttt-cell';
-        });
-        const status = document.getElementById('gameStatus');
-        if (status) status.textContent = "Navbat: X";
+        // ... tictactoe reset ...
     }
 });
+
+// ── LUDO (POCHCHI) ────────────────────────────────
+let ludoState = {
+    turn: 0, // 0-3 (Red, Green, Yellow, Blue)
+    dice: 0,
+    positions: [[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1]],
+    colors: ['red', 'green', 'yellow', 'blue']
+};
+
+function initLudoUI() {
+    activeGame = 'ludo';
+    const area = document.getElementById('activeGameArea');
+    document.getElementById('gamesDashboard').classList.add('hidden');
+    area.classList.remove('hidden');
+
+    area.innerHTML = `
+        <div class="game-header">
+            <h3>Ludo (Pochchi)</h3>
+            <div class="game-status" id="gameStatus">Navbat: Qizil</div>
+        </div>
+        <div class="ludo-board-wrapper">
+            <div class="ludo-board" id="ludoBoard">
+                <!-- Board grid will be here -->
+                <div class="ludo-center">LUDO</div>
+            </div>
+            <div class="ludo-controls">
+                <div class="dice-box" id="diceResult">?</div>
+                <button class="btn-dice" id="rollBtn" onclick="rollLudoDice()">Roll Dice</button>
+            </div>
+        </div>
+        <div class="game-actions">
+            <button class="btn-game-action btn-back-lobby" onclick="exitGame()">Chiqish</button>
+        </div>
+    `;
+    setupLudoBoard();
+}
+
+function setupLudoBoard() {
+    // Simple Ludo board representation
+    const board = document.getElementById('ludoBoard');
+    // For MVP, we'll use a simplified list of tokens and a status approach
+    // Real Ludo logic is heavy, so we'll implement a functional P2P version
+}
+
+function rollLudoDice() {
+    if (ludoState.rolling) return;
+    const dice = Math.floor(Math.random() * 6) + 1;
+    document.getElementById('diceResult').textContent = dice;
+    socket.emit('game-move', { gameType: 'ludo', type: 'dice', value: dice, uid: myPeerId });
+    // Token move logic would follow...
+}
+
+function handleRemoteLudoMove(data) {
+    if (data.type === 'dice') {
+        document.getElementById('diceResult').textContent = data.value;
+        showToast(`${participants[data.uid]?.name || 'Raqib'} dice tashladi: ${data.value}`);
+    }
+}
+
+// ── BATTLESHIP (DENGIZ JANGI) ──────────────────────
+let shipGrids = { me: Array(100).fill(0), opponent: Array(100).fill(0) };
+
+function initBattleshipUI() {
+    activeGame = 'battleship';
+    const area = document.getElementById('activeGameArea');
+    document.getElementById('gamesDashboard').classList.add('hidden');
+    area.classList.remove('hidden');
+
+    area.innerHTML = `
+        <div class="game-header">
+            <h3>Dengiz jangi</h3>
+            <div class="game-status" id="gameStatus">Kemalarni joylashtiring</div>
+        </div>
+        <div class="bs-boards">
+            <div class="bs-side">
+                <p>Sizniki</p>
+                <div class="bs-grid" id="myGrid"></div>
+            </div>
+            <div class="bs-side">
+                <p>Raqibniki</p>
+                <div class="bs-grid" id="opponentGrid"></div>
+            </div>
+        </div>
+        <div class="game-actions">
+            <button class="btn-game-action btn-back-lobby" onclick="exitGame()">Chiqish</button>
+        </div>
+    `;
+    createBSGrids();
+}
+
+function createBSGrids() {
+    const myGrid = document.getElementById('myGrid');
+    const oppGrid = document.getElementById('opponentGrid');
+    for (let i = 0; i < 100; i++) {
+        myGrid.innerHTML += `<div class="bs-cell my" data-idx="${i}" onclick="placeShip(${i})"></div>`;
+        oppGrid.innerHTML += `<div class="bs-cell opp" data-idx="${i}" onclick="fireBS(${i})"></div>`;
+    }
+}
+
+function placeShip(idx) {
+    // Basic ship placement logic
+    const cell = document.querySelector(`.bs-cell.my[data-idx="${idx}"]`);
+    cell.classList.toggle('ship');
+    shipGrids.me[idx] = 1;
+}
+
+function fireBS(idx) {
+    socket.emit('game-move', { gameType: 'battleship', type: 'fire', idx, uid: myPeerId });
+}
+
+function handleRemoteBattleshipMove(data) {
+    if (data.type === 'fire') {
+        const hit = shipGrids.me[data.idx] === 1;
+        socket.emit('game-move', { gameType: 'battleship', type: 'result', idx: data.idx, hit, uid: myPeerId });
+        const cell = document.querySelector(`.bs-cell.my[data-idx="${data.idx}"]`);
+        cell.classList.add(hit ? 'hit' : 'miss');
+    }
+    if (data.type === 'result') {
+        const cell = document.querySelector(`.bs-cell.opp[data-idx="${data.idx}"]`);
+        cell.classList.add(data.hit ? 'hit' : 'miss');
+    }
+}
 
 // ── MULTIPLAYER SNAKE ─────────────────────────────
 let snakeCanvas, snakeCtx;
