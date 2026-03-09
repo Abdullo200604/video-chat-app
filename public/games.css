@@ -20,6 +20,43 @@
     margin-bottom: 12px;
 }
 
+.game-launch-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.game-launch-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    background: white;
+    border: 1px solid #dadce0;
+    color: #202124;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.game-launch-btn i {
+    font-size: 20px;
+    color: var(--blue);
+    width: 24px;
+    text-align: center;
+}
+
+.game-launch-btn:hover {
+    background: #f8f9fa;
+    border-color: var(--blue);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
 .game-launcher-card:hover {
     background: #eef2ff;
     border-color: var(--blue);

@@ -1173,7 +1173,7 @@ setInterval(async () => {
 // ── MULTIPLAYER GAMES ─────────────────────────────
 // ══════════════════════════════════════════════════
 let gameBoard = Array(9).fill(null);
-let mySymbol = null; // 'X' or 'O'
+let tictactoePlayers = { X: null, O: null }; // Tracks which Peer ID owns which symbol
 let currentTurn = 'X';
 
 function launchGame(gameType) {
@@ -1231,13 +1231,64 @@ function initTicTacToeUI() {
 function handleGameMove(index) {
     if (activeGame === 'tictactoe') {
         if (gameBoard[index] || calculateWinner(gameBoard)) return;
-        socket.emit('game-move', { index, symbol: currentTurn, gameType: 'tictactoe' });
-        applyMove(index, currentTurn);
+
+        // Determine if player has a symbol already or can claim one
+        let myAssignedSymbol = null;
+        if (tictactoePlayers.X === myPeerId) myAssignedSymbol = 'X';
+        else if (tictactoePlayers.O === myPeerId) myAssignedSymbol = 'O';
+
+        // Claiming a symbol if it's available and it's that symbol's turn
+        if (!myAssignedSymbol) {
+            if (currentTurn === 'X' && !tictactoePlayers.X) {
+                myAssignedSymbol = 'X';
+                tictactoePlayers.X = myPeerId;
+            } else if (currentTurn === 'O' && !tictactoePlayers.O) {
+                myAssignedSymbol = 'O';
+                tictactoePlayers.O = myPeerId;
+            } else {
+                return showToast('Bu joy allaqachon band qilingan!');
+            }
+        }
+
+        // Validate turn
+        if (currentTurn !== myAssignedSymbol) {
+            return showToast('Navbat sizniki emas!');
+        }
+
+        // Emit with the assigned player's peer ID so clients can sync players
+        socket.emit('game-move', { index, symbol: currentTurn, gameType: 'tictactoe', playerNodeId: myPeerId });
+        applyMove(index, currentTurn, myPeerId);
+    }
+}
+
+function applyMove(index, symbol, playerNodeId = null) {
+    if (playerNodeId) {
+        if (symbol === 'X') tictactoePlayers.X = playerNodeId;
+        else if (symbol === 'O') tictactoePlayers.O = playerNodeId;
+    }
+    gameBoard[index] = symbol;
+    const cell = document.querySelector(`.ttt-cell[data-index="${index}"]`);
+    if (cell) {
+        cell.textContent = symbol;
+        cell.classList.add('occupied', symbol.toLowerCase());
+    }
+
+    const winner = calculateWinner(gameBoard);
+    if (winner) {
+        document.getElementById('gameStatus').innerHTML = winner === 'Draw' ? "Durang 🤝" : `${winner} yutdi! 🎉`;
+        document.querySelectorAll('.ttt-cell').forEach(c => c.classList.add('occupied'));
+
+        if (winner === 'X' && tictactoePlayers.X === myPeerId) socket.emit('save-game-score', { gameType: 'tictactoe', score: 10 });
+        if (winner === 'O' && tictactoePlayers.O === myPeerId) socket.emit('save-game-score', { gameType: 'tictactoe', score: 10 });
+
+    } else {
+        currentTurn = currentTurn === 'X' ? 'O' : 'X';
+        document.getElementById('gameStatus').textContent = `Navbat: ${currentTurn}`;
     }
 }
 
 socket.on('game-remote-move', (data) => {
-    if (data.gameType === 'tictactoe') applyMove(data.index, data.symbol);
+    if (data.gameType === 'tictactoe') applyMove(data.index, data.symbol, data.playerNodeId);
     if (data.gameType === 'rps') handleRemoteRPSMove(data);
     if (data.gameType === 'snake') handleRemoteSnakeMove(data);
     if (data.gameType === 'ludo') handleRemoteLudoMove(data);
