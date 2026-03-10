@@ -76,6 +76,43 @@ body {
     align-items: center;
 }
 
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #f8f9fa;
+    padding: 6px 14px 6px 6px;
+    border-radius: 30px;
+    border: 1px solid #e8eaed;
+}
+
+.user-profile img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.user-profile span {
+    font-size: 14px;
+    font-weight: 500;
+    color: #3c4043;
+}
+
+.btn-logout {
+    color: #5f6368;
+    text-decoration: none;
+    font-size: 16px;
+    margin-left: 4px;
+    transition: color .2s;
+    display: flex;
+    align-items: center;
+}
+
+.btn-logout:hover {
+    color: #ea4335;
+}
+
 /* ═══ BUTTONS ═══ */
 .btn-text {
     background: none;
