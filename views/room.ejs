@@ -38,6 +38,9 @@
                 <i class="fas fa-user-shield"></i>
                 <span>Private</span>
             </div>
+            <button class="icon-btn" id="darkModeBtn" onclick="toggleDarkMode()" title="Tungi rejim">
+                <i class="fas fa-moon" id="darkModeIcon"></i>
+            </button>
             <div class="meeting-code">
                 <span id="meetingCodeText"></span>
                 <button class="icon-btn" onclick="copyMeetingLink()" title="Havolani nusxalash">
@@ -82,15 +85,7 @@
                 <i class="fas fa-record-vinyl"></i>
                 <span>Yozish</span>
             </button>
-            <button class="ctrl-btn" id="blurBtn" onclick="toggleVirtualBlur()" title="Fon Blur">
-                <i class="fas fa-user-shield"></i>
-                <span>Fon Blur</span>
-            </button>
-            <button class="ctrl-btn" id="effectsBtn" onclick="togglePanel('effects')" title="Effektlar">
-                <i class="fas fa-magic"></i>
-                <span>Effektlar</span>
-            </button>
-            <button class="ctrl-btn" id="gamesBtn" onclick="togglePanel('games')" title="O'yinlar">
+            <button class="ctrl-btn hidden" id="gamesBtn" onclick="togglePanel('games')" title="O'yinlar">
                 <i class="fas fa-gamepad"></i>
                 <span>O'yinlar</span>
             </button>
@@ -112,8 +107,11 @@
                 <i class="fas fa-hand-paper"></i>
                 <span>Qo'l</span>
             </button>
-            <button class="ctrl-btn host-only hidden" id="theaterBtn" onclick="toggleTheaterMode()"
-                title="Theater Mode">
+            <button class="ctrl-btn" id="effectsBtn" onclick="togglePanel('effects')" title="Effektlar">
+                <i class="fas fa-magic"></i>
+                <span>Effektlar</span>
+            </button>
+            <button class="ctrl-btn" id="theaterBtn" onclick="toggleTheaterMode()" title="Theater Mode">
                 <i class="fas fa-film"></i>
                 <span>Theater</span>
             </button>

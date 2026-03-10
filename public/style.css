@@ -1769,3 +1769,147 @@ body.meeting-body {
     color: #94a3b8;
     border: 1px solid rgba(148, 163, 184, 0.3);
 }
+
+/* ═══════════════════════════════════════════════
+   DARK MODE (Phosphor / Neon Vibe)
+════════════════════════════════════════════════ */
+body.meeting-body.dark-mode {
+    --bg-dark: #0a0a0f;
+    --bg-darker: #050508;
+    --surface: #111118;
+    --border: #1f1f2e;
+    --text: #f0f0ff;
+    --muted: #8888aa;
+    --blue: #00d4ff;
+    --red: #ff4d6d;
+    --green: #39ff14;
+    --yellow: #ffed4a;
+}
+
+body.meeting-body.dark-mode .meeting-header {
+    background: #0a0a0f;
+    border-bottom: 1px solid #1a1a2e;
+}
+
+body.meeting-body.dark-mode .control-bar {
+    background: rgba(10, 10, 20, 0.98);
+    border-top: 1px solid #1a1a2e;
+}
+
+body.meeting-body.dark-mode .ctrl-btn {
+    color: #c0c0e0;
+}
+
+body.meeting-body.dark-mode .ctrl-btn:hover {
+    background: rgba(0, 212, 255, 0.08);
+    color: #00d4ff;
+}
+
+body.meeting-body.dark-mode .ctrl-btn.active {
+    background: rgba(0, 212, 255, 0.12);
+    color: #00d4ff;
+}
+
+body.meeting-body.dark-mode .video-tile {
+    border: 1.5px solid #1a1a2e;
+    background: #0d0d18;
+}
+
+body.meeting-body.dark-mode .video-tile.is-speaking {
+    border-color: #39ff14;
+    box-shadow: 0 0 12px rgba(57, 255, 20, 0.4);
+}
+
+body.meeting-body.dark-mode .side-panel {
+    background: #0e0e18;
+    border-left: 1px solid #1a1a2e;
+}
+
+body.meeting-body.dark-mode .panel-hdr {
+    border-bottom: 1px solid #1a1a2e;
+    color: #00d4ff;
+}
+
+body.meeting-body.dark-mode .chat-bubble.me {
+    background: rgba(0, 212, 255, 0.15);
+    border: 1px solid rgba(0, 212, 255, 0.25);
+}
+
+body.meeting-body.dark-mode .meeting-timer {
+    color: #a78bfa;
+    font-weight: 600;
+}
+
+body.meeting-body.dark-mode .ttt-cell {
+    background: #111118;
+    border: 1px solid #1f1f2e;
+}
+
+body.meeting-body.dark-mode .ttt-cell.x {
+    color: #ff4d6d;
+}
+
+body.meeting-body.dark-mode .ttt-cell.o {
+    color: #00d4ff;
+}
+
+body.meeting-body.dark-mode .game-status {
+    background: rgba(0, 212, 255, 0.1);
+    color: #00d4ff;
+    border: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+/* ── Battleship Naval Grid ── */
+body.meeting-body.dark-mode .bs-grid {
+    background: #0c2a3d;
+    border: 1px solid #0a3d5c;
+}
+
+body.meeting-body.dark-mode .bs-cell.my {
+    background: #0e2d41;
+}
+
+body.meeting-body.dark-mode .bs-cell.opp {
+    background: #071d2e;
+    cursor: crosshair;
+}
+
+body.meeting-body.dark-mode .bs-cell.ship {
+    background: #2a6496;
+    border: 1px solid #00d4ff;
+}
+
+body.meeting-body.dark-mode .bs-cell.hit {
+    background: #ff4d6d;
+    box-shadow: 0 0 6px rgba(255, 77, 109, 0.6);
+}
+
+body.meeting-body.dark-mode .bs-cell.miss {
+    background: #ffffff20;
+}
+
+/* RPS dark mode */
+body.meeting-body.dark-mode .rps-btn {
+    background: rgba(0, 212, 255, 0.08);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    color: #00d4ff;
+}
+
+body.meeting-body.dark-mode .rps-btn:hover {
+    background: rgba(0, 212, 255, 0.15);
+    box-shadow: 0 0 14px rgba(0, 212, 255, 0.3);
+}
+
+/* ── Dark Mode Toggle Icon ── */
+#darkModeBtn {
+    padding: 6px 10px;
+    border-radius: 8px;
+}
+
+#darkModeBtn:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+body.meeting-body.dark-mode #darkModeBtn {
+    color: #ffed4a;
+}

@@ -159,3 +159,140 @@
     background: #f1f3f4;
     color: #202124;
 }
+
+/* ── Battleship Naval Grid ── */
+.bs-boards {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 12px 0;
+}
+
+.bs-side {
+    flex: 1;
+    min-width: 150px;
+}
+
+.bs-side p {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--blue, #1a73e8);
+}
+
+.bs-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 2px;
+    background: #dde3ea;
+    border-radius: 8px;
+    padding: 4px;
+    border: 2px solid #b0b8c2;
+}
+
+.bs-cell {
+    aspect-ratio: 1;
+    background: white;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: background 0.15s;
+    min-width: 12px;
+}
+
+.bs-cell.my {
+    cursor: crosshair;
+}
+
+.bs-cell.opp {
+    cursor: crosshair;
+}
+
+.bs-cell.ship {
+    background: #1a73e8;
+    border: 1px solid #0d47a1;
+}
+
+.bs-cell.hit {
+    background: #ea4335 !important;
+    position: relative;
+}
+
+.bs-cell.hit::after {
+    content: '🔥';
+    font-size: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bs-cell.miss {
+    background: #cdd3db;
+}
+
+.bs-cell.opp:hover:not(.hit):not(.miss) {
+    background: rgba(234, 67, 53, 0.3);
+}
+
+.bs-instructions {
+    background: rgba(26, 115, 232, 0.08);
+    border: 1px solid rgba(26, 115, 232, 0.2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #5f6368;
+    margin: 10px 0;
+    line-height: 1.5;
+}
+
+/* ── RPS Buttons ── */
+.rps-board {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin: 16px 0;
+}
+
+.rps-btn {
+    flex: 1;
+    padding: 14px 10px;
+    border-radius: 12px;
+    border: 2px solid #dadce0;
+    background: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #202124;
+}
+
+.rps-btn:hover {
+    border-color: var(--blue, #1a73e8);
+    background: #e8f0fe;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(26, 115, 232, 0.15);
+}
+
+.rps-showdown {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    font-size: 28px;
+    margin: 10px 0;
+}
+
+.rps-final-msg {
+    text-align: center;
+    font-size: 18px;
+    font-weight: 700;
+    color: #202124;
+    margin-top: 8px;
+}
+
+/* ── Game Actions row ── */
+.game-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+}

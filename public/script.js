@@ -53,6 +53,23 @@ if (!persistentId) {
 }
 let myRole = 'player'; // player | spectator
 let activeGame = null;
+let darkMode = localStorage.getItem('pdp_dark') === 'true';
+
+// Apply dark mode on load
+if (darkMode) {
+    document.body.classList.add('dark-mode');
+    const icon = document.getElementById('darkModeIcon');
+    if (icon) { icon.className = 'fas fa-sun'; }
+}
+
+function toggleDarkMode() {
+    darkMode = !darkMode;
+    document.body.classList.toggle('dark-mode', darkMode);
+    localStorage.setItem('pdp_dark', darkMode);
+    const icon = document.getElementById('darkModeIcon');
+    if (icon) { icon.className = darkMode ? 'fas fa-sun' : 'fas fa-moon'; }
+    showToast(darkMode ? '🌙 Tungi rejim yoqildi' : '☀️ Kunduzgi rejim yoqildi');
+}
 
 const effectFilters = {
     none: '',
@@ -1492,7 +1509,17 @@ function handleRemoteLudoMove(data) {
 }
 
 // ── BATTLESHIP (DENGIZ JANGI) ──────────────────────
-let shipGrids = { me: Array(100).fill(0), opponent: Array(100).fill(0) };
+const MAX_SHIPS = 5;
+let battleshipState = {
+    phase: 'placement', // placement | waiting | playing | done
+    myShips: [],        // array of indices where I placed ships
+    opponentShips: 0,   // how many opponent ships have been hit
+    myTurn: false,
+    meReady: false,
+    opponentReady: false,
+    shotsFired: [],     // opponent grid cells already shot
+    hitsReceived: 0,    // my ships that have been hit
+};
 
 function initBattleshipUI() {
     activeGame = 'battleship';
@@ -1500,23 +1527,33 @@ function initBattleshipUI() {
     document.getElementById('gamesDashboard').classList.add('hidden');
     area.classList.remove('hidden');
 
+    // Reset state
+    battleshipState = { phase: 'placement', myShips: [], opponentShips: 0, myTurn: false, meReady: false, opponentReady: false, shotsFired: [], hitsReceived: 0 };
+
     area.innerHTML = `
         <div class="game-header">
-            <h3>Dengiz jangi</h3>
-            <div class="game-status" id="gameStatus">Kemalarni joylashtiring</div>
+            <h3>⚓ Dengiz jangi</h3>
+            <div class="game-status" id="gameStatus">⛴ Kemalarni joylashtiring (0/${MAX_SHIPS})</div>
+        </div>
+        <div class="bs-instructions">
+            Öz maydoningizda <strong>${MAX_SHIPS} ta kema</strong> joylashtiring, so'ng <em>Tayyor</em> tugmasini bosing.
+            Raqib tayyor bo'lgach navbat boshlanadi!
         </div>
         <div class="bs-boards">
             <div class="bs-side">
-                <p>Sizniki</p>
+                <p>🛡 Sizning maydoningiz</p>
                 <div class="bs-grid" id="myGrid"></div>
             </div>
             <div class="bs-side">
-                <p>Raqibniki</p>
+                <p>🎯 Raqib maydoni</p>
                 <div class="bs-grid" id="opponentGrid"></div>
             </div>
         </div>
         <div class="game-actions">
             <button class="btn-game-action btn-back-lobby" onclick="exitGame()">Chiqish</button>
+            <button class="btn-game-action" id="readyBtn" onclick="battleshipReady()" disabled>
+                Tayyor (0/${MAX_SHIPS})
+            </button>
         </div>
     `;
     createBSGrids();
@@ -1525,35 +1562,114 @@ function initBattleshipUI() {
 function createBSGrids() {
     const myGrid = document.getElementById('myGrid');
     const oppGrid = document.getElementById('opponentGrid');
+    myGrid.innerHTML = '';
+    oppGrid.innerHTML = '';
     for (let i = 0; i < 100; i++) {
-        myGrid.innerHTML += `<div class="bs-cell my" data-idx="${i}" onclick="placeShip(${i})"></div>`;
-        oppGrid.innerHTML += `<div class="bs-cell opp" data-idx="${i}" onclick="fireBS(${i})"></div>`;
+        const myCell = document.createElement('div');
+        myCell.className = 'bs-cell my';
+        myCell.dataset.idx = i;
+        myCell.onclick = () => placeShip(i);
+        myGrid.appendChild(myCell);
+
+        const oppCell = document.createElement('div');
+        oppCell.className = 'bs-cell opp';
+        oppCell.dataset.idx = i;
+        oppCell.onclick = () => fireBS(i);
+        oppGrid.appendChild(oppCell);
     }
 }
 
 function placeShip(idx) {
     if (myRole === 'spectator') return showToast('Tomoshabin kemalarni joylay olmaydi');
-    // Basic ship placement logic
+    if (battleshipState.meReady) return showToast('Allaqachon tayyor deb belgiladingiz!');
     const cell = document.querySelector(`.bs-cell.my[data-idx="${idx}"]`);
-    cell.classList.toggle('ship');
-    shipGrids.me[idx] = 1;
+    const alreadyPlaced = battleshipState.myShips.includes(idx);
+
+    if (alreadyPlaced) {
+        // Toggle off
+        battleshipState.myShips = battleshipState.myShips.filter(i => i !== idx);
+        cell.classList.remove('ship');
+    } else {
+        if (battleshipState.myShips.length >= MAX_SHIPS) {
+            return showToast(`Maksimal ${MAX_SHIPS} ta kema joylashtirildi!`);
+        }
+        battleshipState.myShips.push(idx);
+        cell.classList.add('ship');
+    }
+
+    const count = battleshipState.myShips.length;
+    document.getElementById('gameStatus').textContent = `⛴ Kemalarni joylashtiring (${count}/${MAX_SHIPS})`;
+    const readyBtn = document.getElementById('readyBtn');
+    readyBtn.textContent = `Tayyor (${count}/${MAX_SHIPS})`;
+    readyBtn.disabled = count < MAX_SHIPS;
+}
+
+function battleshipReady() {
+    if (battleshipState.myShips.length < MAX_SHIPS) return showToast(`${MAX_SHIPS} ta kema joylang!`);
+    battleshipState.meReady = true;
+    battleshipState.phase = 'waiting';
+    document.getElementById('readyBtn').disabled = true;
+    document.getElementById('readyBtn').textContent = '✅ Tayyor!';
+    document.getElementById('gameStatus').textContent = 'Raqib tayyor bo\'lishini kutmoqda...';
+    socket.emit('game-move', { gameType: 'battleship', type: 'ready', uid: myPeerId });
 }
 
 function fireBS(idx) {
     if (myRole === 'spectator') return showToast('Tomoshabin o\'q uza olmaydi');
+    if (battleshipState.phase !== 'playing') return showToast('O\'yin hali boshlanmadi!');
+    if (!battleshipState.myTurn) return showToast('Navbat sizniki emas!');
+    if (battleshipState.shotsFired.includes(idx)) return showToast('Bu katakka allaqachon o\'q uzgansiz!');
+    battleshipState.shotsFired.push(idx);
+    battleshipState.myTurn = false;
+    document.getElementById('gameStatus').textContent = 'Raqibning navbati...';
     socket.emit('game-move', { gameType: 'battleship', type: 'fire', idx, uid: myPeerId });
 }
 
 function handleRemoteBattleshipMove(data) {
+    if (data.type === 'ready') {
+        battleshipState.opponentReady = true;
+        showToast('Raqib tayyor! O\'yin boshlandi 🚢');
+        if (battleshipState.meReady) {
+            // Both ready: the one who clicked ready first gets second go, the other goes first
+            battleshipState.phase = 'playing';
+            battleshipState.myTurn = !battleshipState.myTurn; // creator/first-ready goes first
+            document.getElementById('gameStatus').textContent = battleshipState.myTurn ? '🎯 Sizning navbatingiz!' : 'Raqibning navbati...';
+        } else {
+            // Opponent ready, but we're not yet
+            battleshipState.myTurn = true; // Our turn is first since opponent is waiting for us
+        }
+    }
     if (data.type === 'fire') {
-        const hit = shipGrids.me[data.idx] === 1;
+        const hit = battleshipState.myShips.includes(data.idx);
+        if (hit) battleshipState.hitsReceived++;
+        const myCell = document.querySelector(`.bs-cell.my[data-idx="${data.idx}"]`);
+        if (myCell) myCell.classList.add(hit ? 'hit' : 'miss');
         socket.emit('game-move', { gameType: 'battleship', type: 'result', idx: data.idx, hit, uid: myPeerId });
-        const cell = document.querySelector(`.bs-cell.my[data-idx="${data.idx}"]`);
-        cell.classList.add(hit ? 'hit' : 'miss');
+        if (battleshipState.hitsReceived >= MAX_SHIPS) {
+            battleshipState.phase = 'done';
+            document.getElementById('gameStatus').innerHTML = '💀 Siz yutqazdingiz!';
+            showToast('Barcha kemalaringiz cho\'ktirildi! 💀');
+        } else {
+            // Now it's our turn to fire back
+            battleshipState.myTurn = true;
+            document.getElementById('gameStatus').textContent = '🎯 Sizning navbatingiz!';
+        }
     }
     if (data.type === 'result') {
         const cell = document.querySelector(`.bs-cell.opp[data-idx="${data.idx}"]`);
-        cell.classList.add(data.hit ? 'hit' : 'miss');
+        if (cell) cell.classList.add(data.hit ? 'hit' : 'miss');
+        if (data.hit) {
+            battleshipState.opponentShips++;
+            showToast('🔥 Tekkizdi!');
+            if (battleshipState.opponentShips >= MAX_SHIPS) {
+                battleshipState.phase = 'done';
+                document.getElementById('gameStatus').innerHTML = '🏆 Siz yutdingiz!';
+                showToast('🎉 Barcha kemalar cho\'ktirildi!');
+                socket.emit('save-game-score', { gameType: 'battleship', score: 15 });
+            }
+        } else {
+            showToast('💧 Miss!');
+        }
     }
 }
 
