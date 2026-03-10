@@ -321,6 +321,34 @@ socket.on('room-lock-status', (locked) => {
     const check = document.getElementById('lockRoomCheck');
     if (check) check.checked = locked;
 });
+socket.on('chat-toggled', (enabled) => {
+    chatEnabled = enabled;
+    const input = document.getElementById('chatInput');
+    const btn = document.querySelector('#chatInputArea button');
+    const disMsg = document.getElementById('chatDisabledMsg');
+    if (input) input.disabled = !enabled;
+    if (btn) btn.disabled = !enabled;
+    if (disMsg) disMsg.classList.toggle('hidden', enabled);
+    showToast(enabled ? '💬 Chat yoqildi' : '🔇 Chat o\'chirildi');
+});
+socket.on('host-toggled-mic', (targetId, state) => {
+    if (targetId === myPeerId) {
+        if (micOn !== state) toggleMic();
+    }
+});
+socket.on('join-approved', () => {
+    // Redirected here from lobby - already in meeting room, do nothing
+});
+socket.on('join-denied', () => {
+    showToast('❌ Kirishga ruxsat berilmadi.', 4000);
+    setTimeout(leaveMeeting, 2000);
+});
+socket.on('waiting-approval', () => {
+    showToast('⏳ Mezbondan ruxsat kutilmoqda...', 6000);
+});
+socket.on('room-expiry-warning', ({ message }) => {
+    showToast(`⚠️ ${message}`, 8000);
+});
 
 // ── VIDEO TILES ──────────────────────────────────
 function addTile(stream, peerId, name, isMe) {
@@ -1404,10 +1432,36 @@ socket.on('game-reset-all', (data) => {
     else if (data && data.gameType === 'snake') initSnakeUI();
     else if (data && data.gameType === 'ludo') initLudoUI();
     else if (data && data.gameType === 'battleship') initBattleshipUI();
-    else {
-        // ... tictactoe reset ...
-    }
+    else initTicTacToeUI(); // Default: tictactoe reset
 });
+
+function calculateWinner(board) {
+    const lines = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8], // rows
+        [0, 3, 6], [1, 4, 7], [2, 5, 8], // cols
+        [0, 4, 8], [2, 4, 6]          // diagonals
+    ];
+    for (const [a, b, c] of lines) {
+        if (board[a] && board[a] === board[b] && board[a] === board[c]) return board[a];
+    }
+    if (board.every(cell => cell !== null)) return 'Draw';
+    return null;
+}
+
+function resetGame() {
+    socket.emit('game-reset', { gameType: activeGame });
+}
+
+function exitGame() {
+    activeGame = null;
+    tictactoePlayers = { X: null, O: null };
+    gameBoard = Array(9).fill(null);
+    currentTurn = 'X';
+    const dashboard = document.getElementById('gamesDashboard');
+    const area = document.getElementById('activeGameArea');
+    if (dashboard) dashboard.classList.remove('hidden');
+    if (area) { area.innerHTML = ''; area.classList.add('hidden'); }
+}
 
 // ── LUDO (POCHCHI) ────────────────────────────────
 let ludoState = {
