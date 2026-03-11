@@ -2,7 +2,7 @@
 
 # 🎙️ PDP Chat
 
-**Zamonaviy, real-vaqt video-konferensiya va o'yinlar platformasi**
+**Zamonaviy, real-vaqt video-konferensiya platformasi**
 
 [![Node.js](https://img.shields.io/badge/Node.js-22.x-339933?style=flat-square&logo=node.js)](https://nodejs.org)
 [![Socket.IO](https://img.shields.io/badge/Socket.IO-4.x-black?style=flat-square&logo=socket.io)](https://socket.io)
@@ -25,21 +25,10 @@
 - **Maxfiy suhbat** — end-to-end darajasidagi xavfsizlik va blur effektlar
 - **Yozib olish** — majlisni WebM formatida yuklab olish
 
-### 🎲 O'yinlar Markazi (Multiplayer Games) _(Yangi!)_
-- **6 xil multipleyer o'yin**:
-  - **Tic-Tac-Toe** (X/O)
-  - **Tosh, Qaychi, Qog'oz** (RPS)
-  - **Multiplayer Iloncha** (Snake)
-  - **Sodda Shaxmat** (Simple Chess)
-  - **Ludo** (Pochchi)
-  - **Dengiz jangi** (Battleship)
-- **Leaderboard (Peshqadamlar)** — har bir o'yin bo'yicha eng kuchli 10 talik reyting
-- **Spectator Mode (Tomoshabin)** — o'yinlarni tashqaridan kuzatish imkoniyati
-
 ### 💾 Server-side Persistence (SQLite)
 - **Ma'lumotlar xavfsizligi** — xonalar va rejalashtirilgan majlislar SQLite bazasida saqlanadi
 - **Avtomatik yuklash** — server o'chib yonganda barcha xonalar va ma'lumotlar qayta tiklanadi
-- **Foydalanuvchi ballari** — o'yin natijalari va foydalanuvchi profillari bazada doimiy saqlanadi
+- **Foydalanuvchi ma'lumotlari** — foydalanuvchi profillari bazada doimiy saqlanadi
 
 ### 🛡️ Moderatsiya va Boshqaruv
 - **Mezbonlik** — kirish turi (ochiq / so'rovli / ishonchli) va qurilmalar boshqaruvi
@@ -76,7 +65,6 @@ pdp-chat/
 │   └── sockets/              ← Socket logic
 ├── views/                    ← EJS shablonlari
 └── public/
-    ├── games.html            ← O'yinlar markazi (Leaderboard bilan)
     ├── script.js             ← Majlis xonasi JS
     └── style.css             ← Asosiy dizayn
 ```
@@ -88,10 +76,8 @@ pdp-chat/
 | Marshrut | Tavsif |
 |----------|--------|
 | `/` | Asosiy sahifa |
-| `/games` | O'yinlar Markazi va Leaderboard |
 | `/random` | Random Rooms (Tasodifiy suhbat) |
 | `/admin` | Admin boshqaruv paneli |
-| `/api/leaderboard/:game` | O'yin reytingini olish |
 
 ---
 

@@ -88,7 +88,6 @@ db.getRooms((err, rows) => {
         startTime: r.startTime,
         chatEnabled: !!r.chatEnabled,
         theaterMode: !!r.theaterMode,
-        gameType: r.gameType,
         accessType: 'open', // Default for recovery
         permissions: { screenShare: true, reactions: true, participantMic: true, participantCamera: true },
         waitingRoom: [],
@@ -147,11 +146,10 @@ app.post('/api/create-room', (req, res) => {
       participantCamera: true,
     },
     waitingRoom: [],
-    participants: {},
-    gameType: req.body.gameType || null
+    participants: {}
   };
   db.saveRoom({ id: roomId, ...rooms[roomId] });
-  res.json({ roomId, link: `/lobby/${roomId}${req.body.gameType ? '?game=' + req.body.gameType : ''}` });
+  res.json({ roomId, link: `/lobby/${roomId}` });
 });
 
 // Lobby (pre-join) page
@@ -276,16 +274,9 @@ app.get('/random', (req, res) => {
   res.redirect('https://chat.pdpedu.uz/random');
 });
 
-app.get('/games', (req, res) => {
-  res.sendFile(__dirname + '/public/games.html');
-});
 
-app.get('/api/leaderboard/:game', (req, res) => {
-  db.getLeaderboard(req.params.game, (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
-});
+
+
 
 // Legacy direct room route (Catch all)
 app.get('/:room', (req, res) => {
@@ -327,7 +318,6 @@ io.on('connection', socket => {
             startTime: dbRoom.startTime,
             chatEnabled: !!dbRoom.chatEnabled,
             theaterMode: !!dbRoom.theaterMode,
-            gameType: dbRoom.gameType,
             accessType: 'open',
             permissions: { screenShare: true, reactions: true, participantMic: true, participantCamera: true },
             waitingRoom: [],
@@ -522,22 +512,7 @@ io.on('connection', socket => {
       io.to(roomId).emit('room-lock-status', locked);
     });
 
-    socket.on('game-launch', ({ gameType }) => {
-      io.to(roomId).emit('game-started', { gameType, startedBy: currentName });
-    });
 
-    socket.on('game-move', (moveData) => {
-      socket.to(roomId).emit('game-remote-move', moveData);
-    });
-
-    socket.on('game-reset', () => {
-      io.to(roomId).emit('game-reset-all');
-    });
-
-    socket.on('save-game-score', (data) => {
-      // data: { gameType, score }
-      db.addScore(userId, data.gameType, data.score);
-    });
 
     socket.on('disconnect', () => {
       if (adminRouter && adminRouter.addLog) adminRouter.addLog(`User ${currentName} (${userId}) left room ${roomId}`);

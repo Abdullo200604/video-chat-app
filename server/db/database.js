@@ -14,8 +14,7 @@ db.serialize(() => {
         isPrivate INTEGER DEFAULT 0,
         startTime INTEGER,
         chatEnabled INTEGER DEFAULT 1,
-        theaterMode INTEGER DEFAULT 0,
-        gameType TEXT
+        theaterMode INTEGER DEFAULT 0
     )`);
 
     // Scheduled Meetings Table
@@ -33,23 +32,14 @@ db.serialize(() => {
         createdAt INTEGER
     )`);
 
-    // Scores Table
-    db.run(`CREATE TABLE IF NOT EXISTS scores (
-        userId TEXT,
-        gameType TEXT,
-        score INTEGER,
-        timestamp INTEGER,
-        FOREIGN KEY(userId) REFERENCES users(id)
-    )`);
-
     console.log('[DB] Database initialized successfully.');
 });
 
 module.exports = {
     // Rooms
     saveRoom: (room) => {
-        const stmt = db.prepare('REPLACE INTO rooms (id, host, isPrivate, startTime, chatEnabled, theaterMode, gameType) VALUES (?, ?, ?, ?, ?, ?, ?)');
-        stmt.run(room.id, room.host, room.isPrivate ? 1 : 0, room.startTime, room.chatEnabled ? 1 : 0, room.theaterMode ? 1 : 0, room.gameType || null);
+        const stmt = db.prepare('REPLACE INTO rooms (id, host, isPrivate, startTime, chatEnabled, theaterMode) VALUES (?, ?, ?, ?, ?, ?)');
+        stmt.run(room.id, room.host, room.isPrivate ? 1 : 0, room.startTime, room.chatEnabled ? 1 : 0, room.theaterMode ? 1 : 0);
         stmt.finalize();
     },
     deleteRoom: (id) => {
@@ -72,26 +62,10 @@ module.exports = {
         db.all('SELECT * FROM scheduled_meetings', (err, rows) => callback(err, rows));
     },
 
-    // Users & Scores
+    // Users
     upsertUser: (id, name) => {
         const stmt = db.prepare('INSERT OR IGNORE INTO users (id, name, createdAt) VALUES (?, ?, ?)');
         stmt.run(id, name, Date.now());
         stmt.finalize();
-    },
-    addScore: (userId, gameType, score) => {
-        const stmt = db.prepare('INSERT INTO scores (userId, gameType, score, timestamp) VALUES (?, ?, ?, ?)');
-        stmt.run(userId, gameType, score, Date.now());
-        stmt.finalize();
-    },
-    getLeaderboard: (gameType, callback) => {
-        const query = `
-            SELECT u.name, SUM(s.score) as totalScore 
-            FROM scores s 
-            JOIN users u ON s.userId = u.id 
-            WHERE s.gameType = ? 
-            GROUP BY u.id 
-            ORDER BY totalScore DESC 
-            LIMIT 10`;
-        db.all(query, [gameType], (err, rows) => callback(err, rows));
     }
 };

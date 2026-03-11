@@ -7,7 +7,6 @@
     <title>PDP Chat – Majlis</title>
     <link rel="icon" type="image/png" href="/logo.png">
     <link rel="stylesheet" href="/style.css">
-    <link rel="stylesheet" href="/games.css">
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -84,10 +83,6 @@
             <button class="ctrl-btn" id="recordBtn" onclick="toggleRecording()" title="Yozib olish">
                 <i class="fas fa-record-vinyl"></i>
                 <span>Yozish</span>
-            </button>
-            <button class="ctrl-btn hidden" id="gamesBtn" onclick="togglePanel('games')" title="O'yinlar">
-                <i class="fas fa-gamepad"></i>
-                <span>O'yinlar</span>
             </button>
             <button class="ctrl-btn" id="chatBtn" onclick="togglePanel('chat')" title="Chat">
                 <i class="fas fa-comment"></i>
@@ -205,42 +200,6 @@
         </div>
     </div>
 
-    <!-- Games Panel -->
-    <div class="side-panel" id="gamesPanel">
-        <div class="panel-header">
-            <h3>🎮 O'yinlar</h3>
-            <button class="close-panel" onclick="togglePanel('games')"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="panel-body">
-            <div id="gamesDashboard">
-                <p style="color:var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">Birorta o'yinni tanlang va
-                    do'stlar bilan o'ynang.</p>
-                <div class="game-launch-list">
-                    <button class="game-launch-btn" onclick="launchGame('tictactoe')">
-                        <i class="fas fa-times"></i> Tic-Tac-Toe
-                    </button>
-                    <button class="game-launch-btn" onclick="launchGame('rps')">
-                        <i class="fas fa-hand-scissors"></i> Tosh, Qaychi, Qogoz
-                    </button>
-                    <button class="game-launch-btn" onclick="launchGame('snake')">
-                        <i class="fas fa-staff-snake"></i> Multiplayer Snake
-                    </button>
-                    <button class="game-launch-btn" onclick="launchGame('chess')">
-                        <i class="fas fa-chess-knight"></i> Sodda Shaxmat
-                    </button>
-                    <button class="game-launch-btn" onclick="launchGame('ludo')">
-                        <i class="fas fa-dice"></i> Ludo (Pochchi)
-                    </button>
-                    <button class="game-launch-btn" onclick="launchGame('battleship')">
-                        <i class="fas fa-ship"></i> Dengiz jangi
-                    </button>
-                </div>
-            </div>
-            <div id="activeGameArea" class="hidden">
-                <!-- Game content dynamic -->
-            </div>
-        </div>
-    </div>
 
     <!-- Host Panel -->
     <div class="side-panel" id="hostPanel">

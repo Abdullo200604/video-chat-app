@@ -1913,3 +1913,37 @@ body.meeting-body.dark-mode .rps-btn:hover {
 body.meeting-body.dark-mode #darkModeBtn {
     color: #ffed4a;
 }
+
+/* ── THEATER MODE STYLES ── */
+body.theater-mode-active .meeting-header {
+    display: none;
+}
+
+body.theater-mode-active .control-bar {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 1000;
+}
+
+body.theater-mode-active .control-bar:hover {
+    opacity: 1;
+}
+
+body.theater-mode-active .video-area {
+    height: 100vh;
+    padding: 0;
+}
+
+body.theater-mode-active .side-panel.open {
+    display: none; /* Hide side panels in theater mode */
+}
+
+body.theater-mode-active #videoGrid {
+    padding: 10px;
+    gap: 10px;
+}
