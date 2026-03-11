@@ -32,6 +32,11 @@
         <div class="nav-actions" id="navActions">
             <a href="https://chat.pdpedu.uz/random" class="nav-link"><i class="fas fa-random"></i> Random Chat</a>
 
+            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Mavzuni almashtirish">
+                <i class="fas fa-moon"></i>
+                <i class="fas fa-sun"></i>
+            </button>
+
             <button class="btn-text" onclick="window.location.href='/auth/google'">Kirish</button>
             <button class="btn-primary-sm" onclick="openModal()">Majlis boshlash</button>
         </div>
@@ -197,6 +202,17 @@
     <div class="modal-backdrop" id="linkBackdrop" onclick="closeLinkModal()" style="display:none"></div>
 
     <script>
+        // ── THEME LOGIC ─────────────────────────────
+        const body = document.body;
+        const currentTheme = localStorage.getItem('theme') || 'light';
+        if (currentTheme === 'dark') body.classList.add('dark-theme');
+
+        function toggleTheme() {
+            body.classList.toggle('dark-theme');
+            const theme = body.classList.contains('dark-theme') ? 'dark' : 'light';
+            localStorage.setItem('theme', theme);
+        }
+
         let generatedRoomUrl = '';
 
         function openModal() {
@@ -269,6 +285,11 @@
                 // Update Navbar
                 document.getElementById('navActions').innerHTML = `
                             <a href="https://chat.pdpedu.uz/random" class="nav-link"><i class="fas fa-random"></i> Random Chat</a>
+                            
+                            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Mavzuni almashtirish">
+                                <i class="fas fa-moon"></i>
+                                <i class="fas fa-sun"></i>
+                            </button>
 
                             <div class="user-profile">
                                 <img src="${user.avatar}" alt="${user.name}">
@@ -295,7 +316,7 @@
             const moveY = (y - centerY) / 30;
 
             blobs.forEach((blob, index) => {
-                const depth = (index + 1) * 0.5;
+                const depth = (index + 1) * 0.8; // Increased sensitivity
                 blob.style.transform = `translate(${moveX * depth}px, ${moveY * depth}px)`;
             });
         });
