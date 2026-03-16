@@ -1,15 +1,16 @@
 :root {
-    /* Light Theme */
+    /* Light Theme - Improved Visibility */
     --bg-color: #ffffff;
     --text-color: #202124;
     --navbar-bg: rgba(255, 255, 255, 0.95);
     --border-color: #e8eaed;
     --card-bg: #ffffff;
-    --blob-1: rgba(26, 115, 232, 0.2);
-    --blob-2: rgba(52, 168, 83, 0.15);
-    --blob-3: rgba(147, 51, 234, 0.15);
+    --blob-1: rgba(26, 115, 232, 0.35); /* Increased opacity */
+    --blob-2: rgba(52, 168, 83, 0.3);
+    --blob-3: rgba(147, 51, 234, 0.3);
     --primary-btn: #1a73e8;
     --hero-gradient: linear-gradient(135deg, #1a73e8, #34a853);
+    --bg-gradient: radial-gradient(circle at 50% 50%, #ffffff, #f0f4ff);
 }
 
 body.dark-theme {
@@ -19,11 +20,12 @@ body.dark-theme {
     --navbar-bg: rgba(11, 14, 20, 0.9);
     --border-color: #2a2e37;
     --card-bg: #161b22;
-    --blob-1: rgba(0, 255, 255, 0.3); /* Neon Cyan */
-    --blob-2: rgba(0, 255, 127, 0.25); /* Neon Green */
-    --blob-3: rgba(255, 0, 255, 0.25); /* Neon Magenta */
+    --blob-1: rgba(0, 255, 255, 0.45); /* More neon */
+    --blob-2: rgba(0, 255, 127, 0.4);
+    --blob-3: rgba(255, 0, 255, 0.4);
     --primary-btn: #00d2ff;
     --hero-gradient: linear-gradient(135deg, #00d2ff, #2bff88);
+    --bg-gradient: radial-gradient(circle at 50% 50%, #0b0e14, #05070a);
 }
 
 /* ═══ BASE ═══ */
@@ -52,16 +54,17 @@ body {
     height: 100%;
     z-index: -1;
     overflow: hidden;
-    background: var(--bg-color);
+    background: var(--bg-gradient);
 }
 
 .blob {
     position: absolute;
     border-radius: 50%;
-    filter: blur(80px);
-    opacity: 0.4;
-    transition: transform 0.2s ease-out;
+    filter: blur(100px);
+    opacity: 0.5;
+    transition: transform 0.1s ease-out;
     pointer-events: none;
+    mix-blend-mode: multiply; /* Better visibility on light background */
 }
 
 .blob-1 {

@@ -306,17 +306,14 @@
         // ── MOUSE SENSITIVITY (PARALLAX) ──
         document.addEventListener('mousemove', (e) => {
             const blobs = document.querySelectorAll('.blob');
-            const x = e.clientX;
-            const y = e.clientY;
+            const { clientX: x, clientY: y } = e;
+            const { innerWidth: w, innerHeight: h } = window;
 
-            const centerX = window.innerWidth / 2;
-            const centerY = window.innerHeight / 2;
-
-            const moveX = (x - centerX) / 30;
-            const moveY = (y - centerY) / 30;
+            const moveX = (x - w / 2) / 10; // Divisor decreased for more movement
+            const moveY = (y - h / 2) / 10;
 
             blobs.forEach((blob, index) => {
-                const depth = (index + 1) * 0.8; // Increased sensitivity
+                const depth = (index + 1) * 1.5; // Multiplier increased for more depth
                 blob.style.transform = `translate(${moveX * depth}px, ${moveY * depth}px)`;
             });
         });
